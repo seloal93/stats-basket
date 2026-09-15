@@ -472,7 +472,18 @@
       const avgStl = p.stl / p.gp;
       const avgBlk = p.blk / p.gp;
 
-      // 1. Radar Chart con Tooltips ajustados
+      // Posicionador personalizado para fijar el tooltip en la esquina superior derecha
+      if (Chart.Tooltip && Chart.Tooltip.positioners) {
+        Chart.Tooltip.positioners.topRight = function(items) {
+          if (!items.length) return false;
+          return {
+            x: this.chart.chartArea.right - 10,
+            y: this.chart.chartArea.top + 10
+          };
+        };
+      }
+
+      // 1. Radar Chart con Tooltip Anclado en la Esquina Superior Derecha
       const ctxRadar = document.getElementById('radarChart').getContext('2d');
       radarChartInstance = new Chart(ctxRadar, {
         type: 'radar',
@@ -518,22 +529,21 @@
               labels: { color: '#cbd5e1', font: { size: 10 }, boxWidth: 10 } 
             },
             tooltip: {
-              mode: 'index',
+              mode: 'nearest',
               intersect: false,
-              position: 'nearest',
-              caretPadding: 12,
-              backgroundColor: '#0f172a',
+              position: 'topRight',
+              backgroundColor: 'rgba(15, 23, 42, 0.95)',
               titleColor: '#f59e0b',
               bodyColor: '#f8fafc',
               borderColor: '#334155',
               borderWidth: 1,
-              padding: 10,
+              padding: 8,
               callbacks: {
                 title: function(items) {
-                  return `Categoría: ${items[0].label}`;
+                  return `Stat: ${items[0].label}`;
                 },
                 label: function(ctx) {
-                  return ` ${ctx.dataset.label}: ${ctx.raw.toFixed(1)} / partido`;
+                  return ` ${ctx.dataset.label}: ${ctx.raw.toFixed(1)}`;
                 }
               }
             }

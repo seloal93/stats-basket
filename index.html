@@ -129,18 +129,27 @@
         <!-- Sección de Gráficos del Jugador -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           
-          <!-- Gráfico 1: Radar (Jugador vs Media de la Liga) -->
+          <!-- Gráfico 1: Radar + Leyenda Detallada (Jugador vs Media) -->
           <div class="bg-slate-800/40 p-3 sm:p-4 rounded-xl border border-slate-800 flex flex-col items-center">
             <h5 class="text-xs font-bold uppercase text-amber-400 tracking-wider mb-2 text-center">Perfil vs Media de la Liga</h5>
-            <div class="w-full max-w-[280px] h-[220px]">
-              <canvas id="radarChart"></canvas>
+            
+            <div class="w-full flex flex-col sm:flex-row items-center justify-around gap-4">
+              <!-- Radar Chart sin hover estorbando -->
+              <div class="w-full sm:w-1/2 max-w-[200px] h-[190px]">
+                <canvas id="radarChart"></canvas>
+              </div>
+
+              <!-- Leyenda con Stats del Jugador y Media justo debajo -->
+              <div id="radar-legend" class="w-full sm:w-1/2 flex flex-col gap-2.5 text-xs bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                <!-- Se rellena dinámicamente -->
+              </div>
             </div>
           </div>
 
           <!-- Gráfico 2: Distribución % del Total de Producción Individual -->
-          <div class="bg-slate-800/40 p-3 sm:p-4 rounded-xl border border-slate-800 flex flex-col items-center">
+          <div class="bg-slate-800/40 p-3 sm:p-4 rounded-xl border border-slate-800 flex flex-col items-center justify-between">
             <h5 class="text-xs font-bold uppercase text-amber-400 tracking-wider mb-2 text-center">Distribución % de Aportación</h5>
-            <div class="w-full h-[180px] flex items-center justify-center">
+            <div class="w-full h-[170px] flex items-center justify-center">
               <canvas id="stackedBarChart"></canvas>
             </div>
             <p id="stacked-desc" class="text-[11px] text-slate-400 mt-2 text-center"></p>
@@ -466,24 +475,77 @@
       if (radarChartInstance) radarChartInstance.destroy();
       if (stackedChartInstance) stackedChartInstance.destroy();
 
-      const avgPts = p.pts / p.gp;
-      const avgReb = p.rbt / p.gp;
-      const avgAst = p.ast / p.gp;
-      const avgStl = p.stl / p.gp;
-      const avgBlk = p.blk / p.gp;
+      const avgPts = (p.pts / p.gp);
+      const avgReb = (p.rbt / p.gp);
+      const avgAst = (p.ast / p.gp);
+      const avgStl = (p.stl / p.gp);
+      const avgBlk = (p.blk / p.gp);
 
-      // Posicionador personalizado para fijar el tooltip en la esquina superior derecha
-      if (Chart.Tooltip && Chart.Tooltip.positioners) {
-        Chart.Tooltip.positioners.topRight = function(items) {
-          if (!items.length) return false;
-          return {
-            x: this.chart.chartArea.right - 10,
-            y: this.chart.chartArea.top + 10
-          };
-        };
-      }
+      // Generar Leyenda de Stats en Formato Lista con Espaciado
+      const legendContainer = document.getElementById('radar-legend');
+      legendContainer.innerHTML = `
+        <div class="border-b border-slate-800 pb-1 flex justify-between items-center text-[11px] font-bold text-slate-400 uppercase">
+          <span>Categoría</span>
+          <span class="text-amber-400">${p.player}</span>
+        </div>
+        
+        <div>
+          <div class="flex justify-between font-bold text-slate-200">
+            <span>PUNTOS</span>
+            <span class="text-amber-400">${avgPts.toFixed(1)}</span>
+          </div>
+          <div class="flex justify-between text-[11px] text-slate-400">
+            <span>Media Liga:</span>
+            <span>${dynamicGroupAverages.pts.toFixed(1)}</span>
+          </div>
+        </div>
 
-      // 1. Radar Chart con Tooltip Anclado en la Esquina Superior Derecha
+        <div>
+          <div class="flex justify-between font-bold text-slate-200">
+            <span>REBOTES</span>
+            <span class="text-amber-400">${avgReb.toFixed(1)}</span>
+          </div>
+          <div class="flex justify-between text-[11px] text-slate-400">
+            <span>Media Liga:</span>
+            <span>${dynamicGroupAverages.rbt.toFixed(1)}</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between font-bold text-slate-200">
+            <span>ASISTENCIAS</span>
+            <span class="text-amber-400">${avgAst.toFixed(1)}</span>
+          </div>
+          <div class="flex justify-between text-[11px] text-slate-400">
+            <span>Media Liga:</span>
+            <span>${dynamicGroupAverages.ast.toFixed(1)}</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between font-bold text-slate-200">
+            <span>ROBOS</span>
+            <span class="text-amber-400">${avgStl.toFixed(1)}</span>
+          </div>
+          <div class="flex justify-between text-[11px] text-slate-400">
+            <span>Media Liga:</span>
+            <span>${dynamicGroupAverages.stl.toFixed(1)}</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between font-bold text-slate-200">
+            <span>TAPONES</span>
+            <span class="text-amber-400">${avgBlk.toFixed(1)}</span>
+          </div>
+          <div class="flex justify-between text-[11px] text-slate-400">
+            <span>Media Liga:</span>
+            <span>${dynamicGroupAverages.blk.toFixed(1)}</span>
+          </div>
+        </div>
+      `;
+
+      // 1. Radar Chart Limpio (Sin Hover que estorbe)
       const ctxRadar = document.getElementById('radarChart').getContext('2d');
       radarChartInstance = new Chart(ctxRadar, {
         type: 'radar',
@@ -497,8 +559,7 @@
               borderColor: '#f59e0b',
               borderWidth: 2,
               pointBackgroundColor: '#f59e0b',
-              pointRadius: 4,
-              pointHoverRadius: 6
+              pointRadius: 3
             },
             {
               label: 'Media Liga',
@@ -514,8 +575,7 @@
               borderWidth: 1.5,
               borderDash: [4, 4],
               pointBackgroundColor: '#64748b',
-              pointRadius: 3,
-              pointHoverRadius: 5
+              pointRadius: 2
             }
           ]
         },
@@ -523,30 +583,8 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: { 
-            legend: { 
-              display: true, 
-              position: 'top',
-              labels: { color: '#cbd5e1', font: { size: 10 }, boxWidth: 10 } 
-            },
-            tooltip: {
-              mode: 'nearest',
-              intersect: false,
-              position: 'topRight',
-              backgroundColor: 'rgba(15, 23, 42, 0.95)',
-              titleColor: '#f59e0b',
-              bodyColor: '#f8fafc',
-              borderColor: '#334155',
-              borderWidth: 1,
-              padding: 8,
-              callbacks: {
-                title: function(items) {
-                  return `Stat: ${items[0].label}`;
-                },
-                label: function(ctx) {
-                  return ` ${ctx.dataset.label}: ${ctx.raw.toFixed(1)}`;
-                }
-              }
-            }
+            legend: { display: false },
+            tooltip: { enabled: false } // Desactivado para evitar globos tapando el centro
           },
           scales: {
             r: {

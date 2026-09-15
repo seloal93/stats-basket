@@ -9,17 +9,34 @@
 <body class="bg-slate-950 text-slate-100 font-sans min-h-screen">
 
   <!-- Header -->
-  <header class="border-b border-slate-800 bg-slate-900 px-6 py-4 flex justify-between items-center shadow-lg">
+  <header class="border-b border-slate-800 bg-slate-900 px-6 py-4 flex flex-col sm:flex-row gap-4 justify-between items-center shadow-lg">
     <div class="flex items-center gap-3">
       <div class="bg-red-600 text-white font-black px-3 py-1 rounded text-xl italic tracking-wider">
         NBA
       </div>
       <h1 class="text-xl font-bold tracking-tight">Estadísticas Liga de Amigos</h1>
     </div>
-    <!-- Selector Promedios / Totales -->
-    <div class="flex bg-slate-800 p-1 rounded-lg text-xs font-semibold">
-      <button id="btn-avg" onclick="setMode('avg')" class="px-3 py-1.5 rounded-md bg-blue-600 text-white transition">Promedios</button>
-      <button id="btn-tot" onclick="setMode('tot')" class="px-3 py-1.5 rounded-md text-slate-400 hover:text-white transition">Totales</button>
+
+    <!-- Filtros -->
+    <div class="flex items-center gap-3">
+      <!-- Desplegable Últimas N Fechas/Jornadas -->
+      <div class="flex items-center gap-2 text-xs">
+        <label for="last-games" class="text-slate-400 font-semibold uppercase">Segmento:</label>
+        <select id="last-games" onchange="filterGames(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500 font-medium">
+          <option value="all">Toda la Temporada</option>
+          <option value="1">Última Jornada</option>
+          <option value="2">Últimas 2 Jornadas</option>
+          <option value="3">Últimas 3 Jornadas</option>
+          <option value="5">Últimas 5 Jornadas</option>
+          <option value="10">Últimas 10 Jornadas</option>
+        </select>
+      </div>
+
+      <!-- Selector Promedios / Totales -->
+      <div class="flex bg-slate-800 p-1 rounded-lg text-xs font-semibold">
+        <button id="btn-avg" onclick="setMode('avg')" class="px-3 py-1.5 rounded-md bg-blue-600 text-white transition">Promedios</button>
+        <button id="btn-tot" onclick="setMode('tot')" class="px-3 py-1.5 rounded-md text-slate-400 hover:text-white transition">Totales</button>
+      </div>
     </div>
   </header>
 
@@ -27,7 +44,7 @@
   <main class="max-w-7xl mx-auto p-6">
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-2xl font-bold text-white">Líderes de la Liga</h2>
-      <span class="text-xs text-slate-400">* Haz clic en los encabezados de la tabla para ordenar</span>
+      <span class="text-xs text-slate-400">* Haz clic en los encabezados para ordenar</span>
     </div>
 
     <div id="loading" class="text-center py-16 text-slate-400 font-medium">Cargando datos del Sheet...</div>
@@ -67,7 +84,8 @@
     let processedPlayers = [];
     let currentSort = 'pts';
     let sortAsc = false;
-    let displayMode = 'avg'; // 'avg' o 'tot'
+    let displayMode = 'avg';
+    let lastGamesLimit = 'all';
 
     fetch(API_URL)
       .then(res => res.json())
@@ -84,9 +102,26 @@
       });
 
     function processData() {
+      // 1. Obtener todas las fechas únicas y ordenarlas cronológicamente
+      const allDates = Array.from(new Set(
+        rawData.map(r => (r.date || '').trim()).filter(Boolean)
+      )).sort();
+
+      // 2. Determinar qué fechas entran según el filtro
+      let allowedDates = new Set(allDates);
+      if (lastGamesLimit !== 'all' && allDates.length > 0) {
+        const limit = parseInt(lastGamesLimit);
+        const targetDates = allDates.slice(-limit); // Coge las últimas N fechas únicas
+        allowedDates = new Set(targetDates);
+      }
+
+      // 3. Filtrar los registros que coinciden con las fechas seleccionadas
+      const filteredData = rawData.filter(r => allowedDates.has((r.date || '').trim()));
+
+      // 4. Agrupar por jugador
       const playersMap = {};
 
-      rawData.forEach(row => {
+      filteredData.forEach(row => {
         const name = (row.player || '').trim();
         if (!name) return;
 
@@ -108,6 +143,7 @@
         p.to  += parseFloat(row.to)  || 0;
       });
 
+      // 5. Calcular totales, eficiencias y porcentajes
       processedPlayers = Object.values(playersMap).map(p => {
         const pts = ((p.fgm - p.t3m) * 2) + (p.t3m * 3);
         const missedFg = p.fga - p.fgm;
@@ -117,6 +153,12 @@
 
         return { ...p, pts, eff, fg_pct, t3_pct };
       });
+    }
+
+    function filterGames(value) {
+      lastGamesLimit = value;
+      processData();
+      renderTable();
     }
 
     function setMode(mode) {

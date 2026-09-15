@@ -1,1 +1,1 @@
-# [Web](https://seloal93.github.io/stats-basket/)
+# [seloal93.github.io/stats-basket](https://seloal93.github.io/stats-basket/)

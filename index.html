@@ -45,14 +45,14 @@
     <!-- Filtros y Controles del Header -->
     <div class="flex flex-wrap md:flex-nowrap items-center gap-3 w-full md:w-auto justify-between md:justify-end">
       
-      <!-- Selector de Perfil / Gráfico de Jugador (EN EL HEADER) -->
+      <!-- Selector de Perfil / Gráfico de Jugador -->
       <div class="flex items-center gap-1.5 text-xs">
         <select id="player-profile-select" onchange="onSelectPlayerProfile(this.value)" class="bg-slate-800 text-amber-400 border border-amber-500/40 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500 font-semibold cursor-pointer">
           <option value="">👤 Ver Perfil / Gráficos...</option>
         </select>
       </div>
 
-      <!-- Desplegable Últimas N Fechas (Sin la palabra Segmento:) -->
+      <!-- Desplegable Últimas N Fechas -->
       <div class="flex items-center text-xs">
         <select id="last-games" onchange="filterGames(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500 font-medium">
           <option value="all">Toda la Temporada</option>
@@ -129,9 +129,9 @@
         <!-- Sección de Gráficos del Jugador -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           
-          <!-- Gráfico 1: Radar de Perfil (Valores por partido) -->
+          <!-- Gráfico 1: Radar (Jugador vs Media del Grupo) -->
           <div class="bg-slate-800/40 p-3 sm:p-4 rounded-xl border border-slate-800 flex flex-col items-center">
-            <h5 class="text-xs font-bold uppercase text-amber-400 tracking-wider mb-2 text-center">Perfil del Jugador (Radar)</h5>
+            <h5 class="text-xs font-bold uppercase text-amber-400 tracking-wider mb-2 text-center">Perfil vs Media de la Liga</h5>
             <div class="w-full max-w-[280px] h-[220px]">
               <canvas id="radarChart"></canvas>
             </div>
@@ -139,7 +139,7 @@
 
           <!-- Gráfico 2: Distribución % del Total de Producción Individual -->
           <div class="bg-slate-800/40 p-3 sm:p-4 rounded-xl border border-slate-800 flex flex-col items-center">
-            <h5 class="text-xs font-bold uppercase text-amber-400 tracking-wider mb-2 text-center">Distribución % de Producción</h5>
+            <h5 class="text-xs font-bold uppercase text-amber-400 tracking-wider mb-2 text-center">Distribución % de Aportación</h5>
             <div class="w-full h-[180px] flex items-center justify-center">
               <canvas id="stackedBarChart"></canvas>
             </div>
@@ -183,12 +183,12 @@
     const API_URL = 'https://sheetdb.io/api/v1/qvxszq0qirsq0';
     let rawData = [];
     let processedPlayers = [];
+    let dynamicGroupAverages = { pts: 0, rbt: 0, ast: 0, stl: 0, blk: 0 };
     let currentSort = 'pts';
     let sortAsc = false;
     let displayMode = 'avg';
     let lastGamesLimit = 'all';
 
-    // Instancias de Chart.js
     let radarChartInstance = null;
     let stackedChartInstance = null;
 
@@ -272,9 +272,29 @@
 
         return { ...p, pts, eff, fg_pct, t3_pct };
       });
+
+      // CÁLCULO DINÁMICO DE MEDIAS DE LA LIGA (Dividido entre el nº real de jugadores activos)
+      if (processedPlayers.length > 0) {
+        const totalActivePlayers = processedPlayers.length;
+        const sums = processedPlayers.reduce((acc, p) => {
+          acc.pts += (p.pts / p.gp);
+          acc.rbt += (p.rbt / p.gp);
+          acc.ast += (p.ast / p.gp);
+          acc.stl += (p.stl / p.gp);
+          acc.blk += (p.blk / p.gp);
+          return acc;
+        }, { pts: 0, rbt: 0, ast: 0, stl: 0, blk: 0 });
+
+        dynamicGroupAverages = {
+          pts: sums.pts / totalActivePlayers,
+          rbt: sums.rbt / totalActivePlayers,
+          ast: sums.ast / totalActivePlayers,
+          stl: sums.stl / totalActivePlayers,
+          blk: sums.blk / totalActivePlayers
+        };
+      }
     }
 
-    // Llena el selector desplegable de perfiles en el Header
     function populateHeaderSelect() {
       const select = document.getElementById('player-profile-select');
       select.innerHTML = '<option value="">👤 Ver Perfil / Gráficos...</option>';
@@ -291,7 +311,7 @@
     function onSelectPlayerProfile(playerName) {
       if (!playerName) return;
       openPlayerModal(playerName);
-      document.getElementById('player-profile-select').value = ""; // reset selector
+      document.getElementById('player-profile-select').value = "";
     }
 
     function filterGames(value) {
@@ -385,7 +405,6 @@
       });
     }
 
-    // Modal de jugador
     function openPlayerModal(playerName) {
       const p = processedPlayers.find(item => item.player === playerName);
       if (!p) return;
@@ -398,10 +417,8 @@
       document.getElementById('modal-player-summary').innerText = 
         `${p.gp} partidos jugados | ${ppp} PPP | ${rpp} RPP | ${app} APP`;
 
-      // Renderizar Gráficos con Chart.js
       renderPlayerCharts(p);
 
-      // Obtener todos los partidos individuales de este jugador
       const playerGames = rawData
         .filter(r => (r.player || '').trim() === playerName)
         .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
@@ -446,7 +463,6 @@
     }
 
     function renderPlayerCharts(p) {
-      // Destruir gráficos previos si existen
       if (radarChartInstance) radarChartInstance.destroy();
       if (stackedChartInstance) stackedChartInstance.destroy();
 
@@ -456,25 +472,57 @@
       const avgStl = p.stl / p.gp;
       const avgBlk = p.blk / p.gp;
 
-      // 1. Radar Chart (Promedios)
+      // 1. Radar Chart: Jugador vs Media Dinámica de la Liga
       const ctxRadar = document.getElementById('radarChart').getContext('2d');
       radarChartInstance = new Chart(ctxRadar, {
         type: 'radar',
         data: {
           labels: ['PTS', 'REB', 'AST', 'STL', 'BLK'],
-          datasets: [{
-            label: p.player,
-            data: [avgPts, avgReb, avgAst, avgStl, avgBlk],
-            backgroundColor: 'rgba(245, 158, 11, 0.25)',
-            borderColor: '#f59e0b',
-            borderWidth: 2,
-            pointBackgroundColor: '#f59e0b'
-          }]
+          datasets: [
+            {
+              label: p.player,
+              data: [avgPts, avgReb, avgAst, avgStl, avgBlk],
+              backgroundColor: 'rgba(245, 158, 11, 0.35)',
+              borderColor: '#f59e0b',
+              borderWidth: 2,
+              pointBackgroundColor: '#f59e0b',
+              pointRadius: 3
+            },
+            {
+              label: 'Media Liga',
+              data: [
+                dynamicGroupAverages.pts,
+                dynamicGroupAverages.rbt,
+                dynamicGroupAverages.ast,
+                dynamicGroupAverages.stl,
+                dynamicGroupAverages.blk
+              ],
+              backgroundColor: 'rgba(148, 163, 184, 0.15)',
+              borderColor: '#64748b',
+              borderWidth: 1.5,
+              borderDash: [4, 4],
+              pointBackgroundColor: '#64748b',
+              pointRadius: 2
+            }
+          ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
+          plugins: { 
+            legend: { 
+              display: true, 
+              position: 'top',
+              labels: { color: '#cbd5e1', font: { size: 10 }, boxWidth: 10 } 
+            },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  return `${ctx.dataset.label}: ${ctx.raw.toFixed(1)}`;
+                }
+              }
+            }
+          },
           scales: {
             r: {
               angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
@@ -486,7 +534,7 @@
         }
       });
 
-      // 2. Porcentajes de Producción Individual (Calculado sobre el Total de sus Stats)
+      // 2. Porcentajes de Producción Individual
       const totalSum = p.pts + p.rbt + p.ast + p.stl + p.blk;
       let pctPts = 0, pctReb = 0, pctAst = 0, pctStl = 0, pctBlk = 0;
 
@@ -505,7 +553,7 @@
       stackedChartInstance = new Chart(ctxStacked, {
         type: 'bar',
         data: {
-          labels: ['Distribución %'],
+          labels: ['Aportación %'],
           datasets: [
             { label: 'PTS %', data: [pctPts], backgroundColor: '#f59e0b' },
             { label: 'REB %', data: [pctReb], backgroundColor: '#3b82f6' },
@@ -519,7 +567,7 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 12, font: { size: 10 } } },
+            legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 10, font: { size: 10 } } },
             tooltip: {
               callbacks: {
                 label: function(context) {

@@ -110,7 +110,8 @@
 
       processedPlayers = Object.values(playersMap).map(p => {
         const pts = ((p.fgm - p.t3m) * 2) + (p.t3m * 3);
-        const eff = (pts + p.rbt + p.ast + p.stl + p.blk) - ((p.fga - p.fgm) + p.to);
+        const missedFg = p.fga - p.fgm;
+        const eff = (pts + p.rbt + p.ast + p.stl + p.blk) - (missedFg + p.to);
         const fg_pct = p.fga > 0 ? (p.fgm / p.fga) * 100 : 0;
         const t3_pct = p.t3a > 0 ? (p.t3m / p.t3a) * 100 : 0;
 

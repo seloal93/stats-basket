@@ -3,26 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NBA Stats - Liga de Amigos</title>
+  <title>Stats Hub - Liga de Amigos</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Efecto de resaltado al estilo NBA */
+    .sorted-header {
+      border-top: 3px solid #f59e0b !important; /* Barra superior naranja/dorada */
+      background-color: rgba(30, 41, 59, 0.9) !important;
+      color: #ffffff !important;
+    }
+    .sorted-cell {
+      background-color: rgba(255, 255, 255, 0.03) !important;
+      font-weight: 600;
+    }
+  </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans min-h-screen">
 
   <!-- Header -->
   <header class="border-b border-slate-800 bg-slate-900 px-6 py-4 flex flex-col sm:flex-row gap-4 justify-between items-center shadow-lg">
     <div class="flex items-center gap-3">
-      <div class="bg-red-600 text-white font-black px-3 py-1 rounded text-xl italic tracking-wider">
-        NBA
+      <div class="bg-blue-600 text-white font-black px-2.5 py-1 rounded text-lg italic tracking-wider">
+        HOOPS
       </div>
-      <h1 class="text-xl font-bold tracking-tight">Estadísticas Liga de Amigos</h1>
+      <h1 class="text-xl font-bold tracking-tight text-white">LIGA DE AMIGOS <span class="text-slate-500 font-normal">| STATS CENTRAL</span></h1>
     </div>
 
     <!-- Filtros -->
     <div class="flex items-center gap-3">
-      <!-- Desplegable Últimas N Fechas/Jornadas -->
+      <!-- Desplegable Últimas N Fechas -->
       <div class="flex items-center gap-2 text-xs">
-        <label for="last-games" class="text-slate-400 font-semibold uppercase">Segmento:</label>
-        <select id="last-games" onchange="filterGames(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500 font-medium">
+        <label for="last-games" class="text-slate-400 font-semibold uppercase tracking-wider">Segmento:</label>
+        <select id="last-games" onchange="filterGames(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:border-amber-500 font-medium">
           <option value="all">Toda la Temporada</option>
           <option value="1">Última Jornada</option>
           <option value="2">Últimas 2 Jornadas</option>
@@ -34,7 +46,7 @@
 
       <!-- Selector Promedios / Totales -->
       <div class="flex bg-slate-800 p-1 rounded-lg text-xs font-semibold">
-        <button id="btn-avg" onclick="setMode('avg')" class="px-3 py-1.5 rounded-md bg-blue-600 text-white transition">Promedios</button>
+        <button id="btn-avg" onclick="setMode('avg')" class="px-3 py-1.5 rounded-md bg-amber-500 text-slate-950 font-bold transition">Promedios</button>
         <button id="btn-tot" onclick="setMode('tot')" class="px-3 py-1.5 rounded-md text-slate-400 hover:text-white transition">Totales</button>
       </div>
     </div>
@@ -43,36 +55,36 @@
   <!-- Contenido -->
   <main class="max-w-7xl mx-auto p-6">
     <div class="flex justify-between items-center mb-4">
-      <h2 class="text-2xl font-bold text-white">Líderes de la Liga</h2>
-      <span class="text-xs text-slate-400">* Haz clic en los encabezados para ordenar</span>
+      <h2 class="text-2xl font-bold text-white tracking-tight">Estadísticas de Jugadores</h2>
+      <span class="text-xs text-slate-400">* Haz clic en cualquier columna para ordenar</span>
     </div>
 
     <div id="loading" class="text-center py-16 text-slate-400 font-medium">Cargando datos del Sheet...</div>
 
     <div id="table-container" class="hidden overflow-x-auto rounded-lg border border-slate-800 bg-slate-900 shadow-xl">
       <table class="w-full text-sm text-left text-slate-300">
-        <thead class="text-xs uppercase bg-slate-800/90 text-slate-400 border-b border-slate-700 cursor-pointer select-none">
-          <tr>
-            <th class="px-3 py-3 w-10">#</th>
-            <th onclick="sortBy('player')" class="px-4 py-3 font-semibold text-white hover:text-blue-400">JUGADOR</th>
-            <th onclick="sortBy('gp')" class="px-3 py-3 text-right font-semibold hover:text-blue-400">GP</th>
-            <th onclick="sortBy('pts')" class="px-3 py-3 text-right font-semibold text-amber-400 hover:text-yellow-300">PTS</th>
-            <th onclick="sortBy('fgm')" class="px-3 py-3 text-right font-semibold hover:text-blue-400">FGM</th>
-            <th onclick="sortBy('fga')" class="px-3 py-3 text-right font-semibold hover:text-blue-400">FGA</th>
-            <th onclick="sortBy('fg_pct')" class="px-3 py-3 text-right font-semibold hover:text-blue-400">FG%</th>
-            <th onclick="sortBy('t3m')" class="px-3 py-3 text-right font-semibold hover:text-blue-400">3PM</th>
-            <th onclick="sortBy('t3a')" class="px-3 py-3 text-right font-semibold hover:text-blue-400">3PA</th>
-            <th onclick="sortBy('t3_pct')" class="px-3 py-3 text-right font-semibold hover:text-blue-400">3P%</th>
-            <th onclick="sortBy('rbo')" class="px-3 py-3 text-right font-semibold hover:text-blue-400">OREB</th>
-            <th onclick="sortBy('rbt')" class="px-3 py-3 text-right font-semibold hover:text-blue-400">REB</th>
-            <th onclick="sortBy('ast')" class="px-3 py-3 text-right font-semibold hover:text-blue-400">AST</th>
-            <th onclick="sortBy('blk')" class="px-3 py-3 text-right font-semibold hover:text-blue-400">BLK</th>
-            <th onclick="sortBy('stl')" class="px-3 py-3 text-right font-semibold hover:text-blue-400">STL</th>
-            <th onclick="sortBy('to')" class="px-3 py-3 text-right font-semibold text-rose-400 hover:text-rose-300">TO</th>
-            <th onclick="sortBy('eff')" class="px-3 py-3 text-right font-semibold text-emerald-400 hover:text-emerald-300">EFF</th>
+        <thead class="text-xs uppercase bg-slate-800/80 text-slate-400 border-b border-slate-700 cursor-pointer select-none">
+          <tr id="table-head">
+            <th class="px-3 py-3 w-10 text-slate-600">#</th>
+            <th data-col="player" onclick="sortBy('player')" class="px-4 py-3 font-semibold text-white">JUGADOR</th>
+            <th data-col="gp" onclick="sortBy('gp')" class="px-3 py-3 text-right font-semibold">GP</th>
+            <th data-col="pts" onclick="sortBy('pts')" class="px-3 py-3 text-right font-semibold">PTS</th>
+            <th data-col="fgm" onclick="sortBy('fgm')" class="px-3 py-3 text-right font-semibold">FGM</th>
+            <th data-col="fga" onclick="sortBy('fga')" class="px-3 py-3 text-right font-semibold">FGA</th>
+            <th data-col="fg_pct" onclick="sortBy('fg_pct')" class="px-3 py-3 text-right font-semibold">FG%</th>
+            <th data-col="t3m" onclick="sortBy('t3m')" class="px-3 py-3 text-right font-semibold">3PM</th>
+            <th data-col="t3a" onclick="sortBy('t3a')" class="px-3 py-3 text-right font-semibold">3PA</th>
+            <th data-col="t3_pct" onclick="sortBy('t3_pct')" class="px-3 py-3 text-right font-semibold">3P%</th>
+            <th data-col="rbo" onclick="sortBy('rbo')" class="px-3 py-3 text-right font-semibold">OREB</th>
+            <th data-col="rbt" onclick="sortBy('rbt')" class="px-3 py-3 text-right font-semibold">REB</th>
+            <th data-col="ast" onclick="sortBy('ast')" class="px-3 py-3 text-right font-semibold">AST</th>
+            <th data-col="blk" onclick="sortBy('blk')" class="px-3 py-3 text-right font-semibold">BLK</th>
+            <th data-col="stl" onclick="sortBy('stl')" class="px-3 py-3 text-right font-semibold">STL</th>
+            <th data-col="to" onclick="sortBy('to')" class="px-3 py-3 text-right font-semibold">TO</th>
+            <th data-col="eff" onclick="sortBy('eff')" class="px-3 py-3 text-right font-semibold">EFF</th>
           </tr>
         </thead>
-        <tbody id="stats-body" class="divide-y divide-slate-800">
+        <tbody id="stats-body" class="divide-y divide-slate-800/60">
         </tbody>
       </table>
     </div>
@@ -86,6 +98,25 @@
     let sortAsc = false;
     let displayMode = 'avg';
     let lastGamesLimit = 'all';
+
+    const columns = [
+      { key: 'player', label: 'JUGADOR' },
+      { key: 'gp', label: 'GP' },
+      { key: 'pts', label: 'PTS' },
+      { key: 'fgm', label: 'FGM' },
+      { key: 'fga', label: 'FGA' },
+      { key: 'fg_pct', label: 'FG%' },
+      { key: 't3m', label: '3PM' },
+      { key: 't3a', label: '3PA' },
+      { key: 't3_pct', label: '3P%' },
+      { key: 'rbo', label: 'OREB' },
+      { key: 'rbt', label: 'REB' },
+      { key: 'ast', label: 'AST' },
+      { key: 'blk', label: 'BLK' },
+      { key: 'stl', label: 'STL' },
+      { key: 'to', label: 'TO' },
+      { key: 'eff', label: 'EFF' }
+    ];
 
     fetch(API_URL)
       .then(res => res.json())
@@ -102,23 +133,18 @@
       });
 
     function processData() {
-      // 1. Obtener todas las fechas únicas y ordenarlas cronológicamente
       const allDates = Array.from(new Set(
         rawData.map(r => (r.date || '').trim()).filter(Boolean)
       )).sort();
 
-      // 2. Determinar qué fechas entran según el filtro
       let allowedDates = new Set(allDates);
       if (lastGamesLimit !== 'all' && allDates.length > 0) {
         const limit = parseInt(lastGamesLimit);
-        const targetDates = allDates.slice(-limit); // Coge las últimas N fechas únicas
+        const targetDates = allDates.slice(-limit);
         allowedDates = new Set(targetDates);
       }
 
-      // 3. Filtrar los registros que coinciden con las fechas seleccionadas
       const filteredData = rawData.filter(r => allowedDates.has((r.date || '').trim()));
-
-      // 4. Agrupar por jugador
       const playersMap = {};
 
       filteredData.forEach(row => {
@@ -143,7 +169,6 @@
         p.to  += parseFloat(row.to)  || 0;
       });
 
-      // 5. Calcular totales, eficiencias y porcentajes
       processedPlayers = Object.values(playersMap).map(p => {
         const pts = ((p.fgm - p.t3m) * 2) + (p.t3m * 3);
         const missedFg = p.fga - p.fgm;
@@ -163,8 +188,8 @@
 
     function setMode(mode) {
       displayMode = mode;
-      document.getElementById('btn-avg').className = mode === 'avg' ? "px-3 py-1.5 rounded-md bg-blue-600 text-white transition" : "px-3 py-1.5 rounded-md text-slate-400 hover:text-white transition";
-      document.getElementById('btn-tot').className = mode === 'tot' ? "px-3 py-1.5 rounded-md bg-blue-600 text-white transition" : "px-3 py-1.5 rounded-md text-slate-400 hover:text-white transition";
+      document.getElementById('btn-avg').className = mode === 'avg' ? "px-3 py-1.5 rounded-md bg-amber-500 text-slate-950 font-bold transition" : "px-3 py-1.5 rounded-md text-slate-400 hover:text-white transition";
+      document.getElementById('btn-tot').className = mode === 'tot' ? "px-3 py-1.5 rounded-md bg-amber-500 text-slate-950 font-bold transition" : "px-3 py-1.5 rounded-md text-slate-400 hover:text-white transition";
       renderTable();
     }
 
@@ -178,7 +203,27 @@
       renderTable();
     }
 
+    function renderHeaders() {
+      const ths = document.querySelectorAll('#table-head th[data-col]');
+      ths.forEach(th => {
+        const colKey = th.getAttribute('data-col');
+        const colObj = columns.find(c => c.key === colKey);
+        
+        if (colKey === currentSort) {
+          th.className = "px-3 py-3 text-right font-bold sorted-header";
+          if (colKey === 'player') th.className = "px-4 py-3 font-bold sorted-header";
+          th.innerHTML = `${colObj.label} <span class="text-amber-500 text-xs">${sortAsc ? '▲' : '▼'}</span>`;
+        } else {
+          th.className = "px-3 py-3 text-right font-semibold text-slate-400 hover:text-white transition border-t-2 border-transparent";
+          if (colKey === 'player') th.className = "px-4 py-3 font-semibold text-white hover:text-amber-400 transition border-t-2 border-transparent";
+          th.innerText = colObj.label;
+        }
+      });
+    }
+
     function renderTable() {
+      renderHeaders();
+
       processedPlayers.sort((a, b) => {
         let valA = a[currentSort];
         let valB = b[currentSort];
@@ -197,26 +242,28 @@
         const isAvg = displayMode === 'avg';
         const fmt = (val) => isAvg ? (val / p.gp).toFixed(1) : val.toFixed(0);
 
+        const isSorted = (k) => k === currentSort ? 'sorted-cell' : '';
+
         const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-800/60 transition";
+        tr.className = "hover:bg-slate-800/50 transition border-b border-slate-800/40";
         tr.innerHTML = `
-          <td class="px-3 py-3 text-slate-500 text-xs">${index + 1}</td>
-          <td class="px-4 py-3 font-medium text-white">${p.player}</td>
-          <td class="px-3 py-3 text-right font-semibold text-slate-300">${p.gp}</td>
-          <td class="px-3 py-3 text-right font-bold text-amber-400">${fmt(p.pts)}</td>
-          <td class="px-3 py-3 text-right">${fmt(p.fgm)}</td>
-          <td class="px-3 py-3 text-right">${fmt(p.fga)}</td>
-          <td class="px-3 py-3 text-right text-slate-300">${p.fg_pct.toFixed(1)}%</td>
-          <td class="px-3 py-3 text-right">${fmt(p.t3m)}</td>
-          <td class="px-3 py-3 text-right">${fmt(p.t3a)}</td>
-          <td class="px-3 py-3 text-right text-slate-300">${p.t3_pct.toFixed(1)}%</td>
-          <td class="px-3 py-3 text-right">${fmt(p.rbo)}</td>
-          <td class="px-3 py-3 text-right">${fmt(p.rbt)}</td>
-          <td class="px-3 py-3 text-right">${fmt(p.ast)}</td>
-          <td class="px-3 py-3 text-right">${fmt(p.blk)}</td>
-          <td class="px-3 py-3 text-right">${fmt(p.stl)}</td>
-          <td class="px-3 py-3 text-right text-rose-400">${fmt(p.to)}</td>
-          <td class="px-3 py-3 text-right font-bold text-emerald-400">${fmt(p.eff)}</td>
+          <td class="px-3 py-3 text-slate-600 text-xs font-medium">${index + 1}</td>
+          <td class="px-4 py-3 font-semibold text-white ${isSorted('player')}">${p.player}</td>
+          <td class="px-3 py-3 text-right ${isSorted('gp')}">${p.gp}</td>
+          <td class="px-3 py-3 text-right font-medium ${isSorted('pts')}">${fmt(p.pts)}</td>
+          <td class="px-3 py-3 text-right ${isSorted('fgm')}">${fmt(p.fgm)}</td>
+          <td class="px-3 py-3 text-right ${isSorted('fga')}">${fmt(p.fga)}</td>
+          <td class="px-3 py-3 text-right ${isSorted('fg_pct')}">${p.fg_pct.toFixed(1)}%</td>
+          <td class="px-3 py-3 text-right ${isSorted('t3m')}">${fmt(p.t3m)}</td>
+          <td class="px-3 py-3 text-right ${isSorted('t3a')}">${fmt(p.t3a)}</td>
+          <td class="px-3 py-3 text-right ${isSorted('t3_pct')}">${p.t3_pct.toFixed(1)}%</td>
+          <td class="px-3 py-3 text-right ${isSorted('rbo')}">${fmt(p.rbo)}</td>
+          <td class="px-3 py-3 text-right ${isSorted('rbt')}">${fmt(p.rbt)}</td>
+          <td class="px-3 py-3 text-right ${isSorted('ast')}">${fmt(p.ast)}</td>
+          <td class="px-3 py-3 text-right ${isSorted('blk')}">${fmt(p.blk)}</td>
+          <td class="px-3 py-3 text-right ${isSorted('stl')}">${fmt(p.stl)}</td>
+          <td class="px-3 py-3 text-right ${isSorted('to')}">${fmt(p.to)}</td>
+          <td class="px-3 py-3 text-right font-medium text-emerald-400 ${isSorted('eff')}">${fmt(p.eff)}</td>
         `;
         tbody.appendChild(tr);
       });

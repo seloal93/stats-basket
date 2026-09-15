@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stats Basket</title>
+  <title>Olesa 26 - Stats</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     /* Resaltado estilo NBA */
@@ -21,7 +21,7 @@
     .sticky-col {
       position: sticky;
       left: 0;
-      background-color: #0f172a; /* Mismo fondo slate-900 */
+      background-color: #0f172a;
       z-index: 10;
     }
     th.sticky-col {
@@ -35,8 +35,8 @@
   <!-- Header -->
   <header class="border-b border-slate-800 bg-slate-900 px-4 sm:px-6 py-4 flex flex-col sm:flex-row gap-4 justify-between items-center shadow-lg">
     <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-      <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white italic">
-        STATS <span class="text-amber-500">BASKET</span>
+      <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white italic uppercase">
+        Olesa <span class="text-amber-500">26</span>
       </h1>
     </div>
 
@@ -63,11 +63,11 @@
     </div>
   </header>
 
-  <!-- Contenido -->
+  <!-- Contenido Principal -->
   <main class="max-w-7xl mx-auto p-4 sm:p-6">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-4">
-      <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Líderes de la Liga</h2>
-      <span class="text-xs text-slate-400">* Desliza horizontalmente y toca columnas para ordenar</span>
+      <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Estadísticas Generales</h2>
+      <span class="text-xs text-slate-400">* Toca a un jugador para ver su perfil detallado</span>
     </div>
 
     <div id="loading" class="text-center py-16 text-slate-400 font-medium">Cargando datos del Sheet...</div>
@@ -100,6 +100,48 @@
       </table>
     </div>
   </main>
+
+  <!-- Modal Perfil de Jugador -->
+  <div id="player-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onclick="closePlayerModal(event)">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="px-5 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-800/50">
+        <div>
+          <h3 id="modal-player-name" class="text-xl sm:text-2xl font-black text-white italic"></h3>
+          <p id="modal-player-summary" class="text-xs text-slate-400 mt-0.5"></p>
+        </div>
+        <button onclick="closePlayerModal()" class="text-slate-400 hover:text-white bg-slate-800 p-2 rounded-lg text-lg font-bold w-9 h-9 flex items-center justify-center transition">✕</button>
+      </div>
+
+      <!-- Modal Body (Desglose por partidos) -->
+      <div class="p-4 overflow-y-auto flex-1">
+        <h4 class="text-xs font-bold uppercase text-slate-400 tracking-wider mb-3">Histórico de Partidos</h4>
+        
+        <div class="overflow-x-auto rounded-lg border border-slate-800">
+          <table class="w-full text-xs text-left text-slate-300">
+            <thead class="bg-slate-800 text-slate-400 uppercase text-[10px]">
+              <tr>
+                <th class="px-3 py-2">Fecha</th>
+                <th class="px-2 py-2 text-right text-amber-400">PTS</th>
+                <th class="px-2 py-2 text-right">FGM/A</th>
+                <th class="px-2 py-2 text-right">3PM/A</th>
+                <th class="px-2 py-2 text-right">REB</th>
+                <th class="px-2 py-2 text-right">AST</th>
+                <th class="px-2 py-2 text-right">BLK</th>
+                <th class="px-2 py-2 text-right">STL</th>
+                <th class="px-2 py-2 text-right">TO</th>
+                <th class="px-2 py-2 text-right text-emerald-400">EFF</th>
+              </tr>
+            </thead>
+            <tbody id="modal-games-body" class="divide-y divide-slate-800">
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
 
   <script>
     const API_URL = 'https://sheetdb.io/api/v1/qvxszq0qirsq0';
@@ -253,14 +295,15 @@
       processedPlayers.forEach((p, index) => {
         const isAvg = displayMode === 'avg';
         const fmt = (val) => isAvg ? (val / p.gp).toFixed(1) : val.toFixed(0);
-
         const isSorted = (k) => k === currentSort ? 'sorted-cell' : '';
 
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-800/50 transition border-b border-slate-800/40";
         tr.innerHTML = `
           <td class="px-2 sm:px-3 py-3 text-slate-600 text-center text-xs font-medium">${index + 1}</td>
-          <td class="px-3 sm:px-4 py-3 font-semibold text-white whitespace-nowrap sticky-col border-r border-slate-800/80 ${isSorted('player')}">${p.player}</td>
+          <td onclick="openPlayerModal('${p.player}')" class="px-3 sm:px-4 py-3 font-semibold text-amber-400 hover:text-amber-300 underline underline-offset-4 cursor-pointer whitespace-nowrap sticky-col border-r border-slate-800/80 ${isSorted('player')}">
+            ${p.player}
+          </td>
           <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('gp')}">${p.gp}</td>
           <td class="px-2.5 sm:px-3 py-3 text-right font-medium ${isSorted('pts')}">${fmt(p.pts)}</td>
           <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('fgm')}">${fmt(p.fgm)}</td>
@@ -279,6 +322,64 @@
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    // Modal de jugador
+    function openPlayerModal(playerName) {
+      const playerStats = processedPlayers.find(p => p.player === playerName);
+      if (!playerStats) return;
+
+      document.getElementById('modal-player-name').innerText = playerName;
+      document.getElementById('modal-player-summary').innerText = 
+        `${playerStats.gp} partidos jugados | ${(playerStats.pts / playerStats.gp).toFixed(1)} PPP | ${(playerStats.rbt / playerStats.gp).toFixed(1)} RPP | ${(playerStats.ast / playerStats.gp).toFixed(1)} APP`;
+
+      // Obtener todos los partidos individuales de este jugador
+      const playerGames = rawData
+        .filter(r => (r.player || '').trim() === playerName)
+        .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+      const modalBody = document.getElementById('modal-games-body');
+      modalBody.innerHTML = '';
+
+      playerGames.forEach(g => {
+        const fgm = parseFloat(g.fgm) || 0;
+        const fga = parseFloat(g.fga) || 0;
+        const t3m = parseFloat(g.t3m) || 0;
+        const t3a = parseFloat(g.t3a) || 0;
+        const rbt = parseFloat(g.rbt) || 0;
+        const ast = parseFloat(g.ast) || 0;
+        const blk = parseFloat(g.blk) || 0;
+        const stl = parseFloat(g.stl) || 0;
+        const to = parseFloat(g.to) || 0;
+
+        const pts = ((fgm - t3m) * 2) + (t3m * 3);
+        const missedFg = fga - fgm;
+        const eff = (pts + rbt + ast + stl + blk) - (missedFg + to);
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/40";
+        tr.innerHTML = `
+          <td class="px-3 py-2 font-medium text-slate-200 whitespace-nowrap">${g.date || '-'}</td>
+          <td class="px-2 py-2 text-right font-bold text-amber-400">${pts}</td>
+          <td class="px-2 py-2 text-right">${fgm}/${fga}</td>
+          <td class="px-2 py-2 text-right">${t3m}/${t3a}</td>
+          <td class="px-2 py-2 text-right">${rbt}</td>
+          <td class="px-2 py-2 text-right">${ast}</td>
+          <td class="px-2 py-2 text-right">${blk}</td>
+          <td class="px-2 py-2 text-right">${stl}</td>
+          <td class="px-2 py-2 text-right">${to}</td>
+          <td class="px-2 py-2 text-right font-bold text-emerald-400">${eff}</td>
+        `;
+        modalBody.appendChild(tr);
+      });
+
+      document.getElementById('player-modal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden'; // Evita scroll de la página de fondo
+    }
+
+    function closePlayerModal() {
+      document.getElementById('player-modal').classList.add('hidden');
+      document.body.style.overflow = 'auto';
     }
   </script>
 </body>

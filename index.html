@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Olesa Pretemporada '26 - Stats</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js para los gráficos de Perfil -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     /* Resaltado estilo NBA */
     .sorted-header {
@@ -33,18 +35,25 @@
 <body class="bg-slate-950 text-slate-100 font-sans min-h-screen">
 
   <!-- Header -->
-  <header class="border-b border-slate-800 bg-slate-900 px-4 sm:px-6 py-4 flex flex-col sm:flex-row gap-4 justify-between items-center shadow-lg">
-    <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+  <header class="border-b border-slate-800 bg-slate-900 px-4 sm:px-6 py-4 flex flex-col md:flex-row gap-4 justify-between items-center shadow-lg">
+    <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
       <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white italic uppercase">
         Olesa <span class="text-amber-500">Pretemporada '26</span>
       </h1>
     </div>
 
-    <!-- Filtros -->
-    <div class="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-      <!-- Desplegable Últimas N Fechas -->
-      <div class="flex items-center gap-2 text-xs">
-        <label for="last-games" class="text-slate-400 font-semibold uppercase tracking-wider">Segmento:</label>
+    <!-- Filtros y Controles del Header -->
+    <div class="flex flex-wrap md:flex-nowrap items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+      
+      <!-- Selector de Perfil / Gráfico de Jugador (EN EL HEADER) -->
+      <div class="flex items-center gap-1.5 text-xs">
+        <select id="player-profile-select" onchange="onSelectPlayerProfile(this.value)" class="bg-slate-800 text-amber-400 border border-amber-500/40 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500 font-semibold cursor-pointer">
+          <option value="">👤 Ver Perfil / Gráficos...</option>
+        </select>
+      </div>
+
+      <!-- Desplegable Últimas N Fechas (Sin la palabra Segmento:) -->
+      <div class="flex items-center text-xs">
         <select id="last-games" onchange="filterGames(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500 font-medium">
           <option value="all">Toda la Temporada</option>
           <option value="1">Última Jornada</option>
@@ -60,6 +69,7 @@
         <button id="btn-avg" onclick="setMode('avg')" class="px-3 py-1.5 rounded-md bg-amber-500 text-slate-950 font-bold transition">Promedios</button>
         <button id="btn-tot" onclick="setMode('tot')" class="px-3 py-1.5 rounded-md text-slate-400 hover:text-white transition">Totales</button>
       </div>
+
     </div>
   </header>
 
@@ -100,9 +110,9 @@
     </div>
   </main>
 
-  <!-- Modal Perfil de Jugador -->
+  <!-- Modal Perfil de Jugador + Gráficos -->
   <div id="player-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onclick="closePlayerModal(event)">
-    <div class="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
       
       <!-- Modal Header -->
       <div class="px-5 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-800/50">
@@ -113,30 +123,57 @@
         <button onclick="closePlayerModal()" class="text-slate-400 hover:text-white bg-slate-800 p-2 rounded-lg text-lg font-bold w-9 h-9 flex items-center justify-center transition">✕</button>
       </div>
 
-      <!-- Modal Body (Desglose por partidos) -->
-      <div class="p-4 overflow-y-auto flex-1">
-        <h4 class="text-xs font-bold uppercase text-slate-400 tracking-wider mb-3">Histórico de Partidos</h4>
+      <!-- Modal Body -->
+      <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6">
         
-        <div class="overflow-x-auto rounded-lg border border-slate-800">
-          <table class="w-full text-xs text-left text-slate-300">
-            <thead class="bg-slate-800 text-slate-400 uppercase text-[10px]">
-              <tr>
-                <th class="px-3 py-2">Fecha</th>
-                <th class="px-2 py-2 text-right text-amber-400">PTS</th>
-                <th class="px-2 py-2 text-right">FGM/A</th>
-                <th class="px-2 py-2 text-right">3PM/A</th>
-                <th class="px-2 py-2 text-right">REB</th>
-                <th class="px-2 py-2 text-right">AST</th>
-                <th class="px-2 py-2 text-right">BLK</th>
-                <th class="px-2 py-2 text-right">STL</th>
-                <th class="px-2 py-2 text-right">TO</th>
-                <th class="px-2 py-2 text-right text-emerald-400">EFF</th>
-              </tr>
-            </thead>
-            <tbody id="modal-games-body" class="divide-y divide-slate-800">
-            </tbody>
-          </table>
+        <!-- Sección de Gráficos del Jugador -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <!-- Gráfico 1: Radar de Perfil (Valores por partido) -->
+          <div class="bg-slate-800/40 p-3 sm:p-4 rounded-xl border border-slate-800 flex flex-col items-center">
+            <h5 class="text-xs font-bold uppercase text-amber-400 tracking-wider mb-2 text-center">Perfil del Jugador (Radar)</h5>
+            <div class="w-full max-w-[280px] h-[220px]">
+              <canvas id="radarChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Gráfico 2: Distribución % del Total de Producción Individual -->
+          <div class="bg-slate-800/40 p-3 sm:p-4 rounded-xl border border-slate-800 flex flex-col items-center">
+            <h5 class="text-xs font-bold uppercase text-amber-400 tracking-wider mb-2 text-center">Distribución % de Producción</h5>
+            <div class="w-full h-[180px] flex items-center justify-center">
+              <canvas id="stackedBarChart"></canvas>
+            </div>
+            <p id="stacked-desc" class="text-[11px] text-slate-400 mt-2 text-center"></p>
+          </div>
+
         </div>
+
+        <!-- Histórico de Partidos -->
+        <div>
+          <h4 class="text-xs font-bold uppercase text-slate-400 tracking-wider mb-3">Histórico de Partidos</h4>
+          
+          <div class="overflow-x-auto rounded-lg border border-slate-800">
+            <table class="w-full text-xs text-left text-slate-300">
+              <thead class="bg-slate-800 text-slate-400 uppercase text-[10px]">
+                <tr>
+                  <th class="px-3 py-2">Fecha</th>
+                  <th class="px-2 py-2 text-right text-amber-400">PTS</th>
+                  <th class="px-2 py-2 text-right">FGM/A</th>
+                  <th class="px-2 py-2 text-right">3PM/A</th>
+                  <th class="px-2 py-2 text-right">REB</th>
+                  <th class="px-2 py-2 text-right">AST</th>
+                  <th class="px-2 py-2 text-right">BLK</th>
+                  <th class="px-2 py-2 text-right">STL</th>
+                  <th class="px-2 py-2 text-right">TO</th>
+                  <th class="px-2 py-2 text-right text-emerald-400">EFF</th>
+                </tr>
+              </thead>
+              <tbody id="modal-games-body" class="divide-y divide-slate-800">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
 
     </div>
@@ -150,6 +187,10 @@
     let sortAsc = false;
     let displayMode = 'avg';
     let lastGamesLimit = 'all';
+
+    // Instancias de Chart.js
+    let radarChartInstance = null;
+    let stackedChartInstance = null;
 
     const columns = [
       { key: 'player', label: 'JUGADOR' },
@@ -177,6 +218,7 @@
         processData();
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('table-container').classList.remove('hidden');
+        populateHeaderSelect();
         renderTable();
       })
       .catch(err => {
@@ -230,6 +272,26 @@
 
         return { ...p, pts, eff, fg_pct, t3_pct };
       });
+    }
+
+    // Llena el selector desplegable de perfiles en el Header
+    function populateHeaderSelect() {
+      const select = document.getElementById('player-profile-select');
+      select.innerHTML = '<option value="">👤 Ver Perfil / Gráficos...</option>';
+      
+      const sortedNames = [...processedPlayers].map(p => p.player).sort((a,b) => a.localeCompare(b));
+      sortedNames.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.innerText = name;
+        select.appendChild(opt);
+      });
+    }
+
+    function onSelectPlayerProfile(playerName) {
+      if (!playerName) return;
+      openPlayerModal(playerName);
+      document.getElementById('player-profile-select').value = ""; // reset selector
     }
 
     function filterGames(value) {
@@ -325,12 +387,19 @@
 
     // Modal de jugador
     function openPlayerModal(playerName) {
-      const playerStats = processedPlayers.find(p => p.player === playerName);
-      if (!playerStats) return;
+      const p = processedPlayers.find(item => item.player === playerName);
+      if (!p) return;
+
+      const ppp = (p.pts / p.gp).toFixed(1);
+      const rpp = (p.rbt / p.gp).toFixed(1);
+      const app = (p.ast / p.gp).toFixed(1);
 
       document.getElementById('modal-player-name').innerText = playerName;
       document.getElementById('modal-player-summary').innerText = 
-        `${playerStats.gp} partidos jugados | ${(playerStats.pts / playerStats.gp).toFixed(1)} PPP | ${(playerStats.rbt / playerStats.gp).toFixed(1)} RPP | ${(playerStats.ast / playerStats.gp).toFixed(1)} APP`;
+        `${p.gp} partidos jugados | ${ppp} PPP | ${rpp} RPP | ${app} APP`;
+
+      // Renderizar Gráficos con Chart.js
+      renderPlayerCharts(p);
 
       // Obtener todos los partidos individuales de este jugador
       const playerGames = rawData
@@ -374,6 +443,97 @@
 
       document.getElementById('player-modal').classList.remove('hidden');
       document.body.style.overflow = 'hidden';
+    }
+
+    function renderPlayerCharts(p) {
+      // Destruir gráficos previos si existen
+      if (radarChartInstance) radarChartInstance.destroy();
+      if (stackedChartInstance) stackedChartInstance.destroy();
+
+      const avgPts = p.pts / p.gp;
+      const avgReb = p.rbt / p.gp;
+      const avgAst = p.ast / p.gp;
+      const avgStl = p.stl / p.gp;
+      const avgBlk = p.blk / p.gp;
+
+      // 1. Radar Chart (Promedios)
+      const ctxRadar = document.getElementById('radarChart').getContext('2d');
+      radarChartInstance = new Chart(ctxRadar, {
+        type: 'radar',
+        data: {
+          labels: ['PTS', 'REB', 'AST', 'STL', 'BLK'],
+          datasets: [{
+            label: p.player,
+            data: [avgPts, avgReb, avgAst, avgStl, avgBlk],
+            backgroundColor: 'rgba(245, 158, 11, 0.25)',
+            borderColor: '#f59e0b',
+            borderWidth: 2,
+            pointBackgroundColor: '#f59e0b'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            r: {
+              angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+              grid: { color: 'rgba(255, 255, 255, 0.1)' },
+              pointLabels: { color: '#94a3b8', font: { size: 10, weight: 'bold' } },
+              ticks: { display: false, beginAtZero: true }
+            }
+          }
+        }
+      });
+
+      // 2. Porcentajes de Producción Individual (Calculado sobre el Total de sus Stats)
+      const totalSum = p.pts + p.rbt + p.ast + p.stl + p.blk;
+      let pctPts = 0, pctReb = 0, pctAst = 0, pctStl = 0, pctBlk = 0;
+
+      if (totalSum > 0) {
+        pctPts = (p.pts / totalSum) * 100;
+        pctReb = (p.rbt / totalSum) * 100;
+        pctAst = (p.ast / totalSum) * 100;
+        pctStl = (p.stl / totalSum) * 100;
+        pctBlk = (p.blk / totalSum) * 100;
+      }
+
+      document.getElementById('stacked-desc').innerText = 
+        `Puntos (${pctPts.toFixed(0)}%) | Rebotes (${pctReb.toFixed(0)}%) | Asistencias (${pctAst.toFixed(0)}%) | Otros (${(pctStl + pctBlk).toFixed(0)}%)`;
+
+      const ctxStacked = document.getElementById('stackedBarChart').getContext('2d');
+      stackedChartInstance = new Chart(ctxStacked, {
+        type: 'bar',
+        data: {
+          labels: ['Distribución %'],
+          datasets: [
+            { label: 'PTS %', data: [pctPts], backgroundColor: '#f59e0b' },
+            { label: 'REB %', data: [pctReb], backgroundColor: '#3b82f6' },
+            { label: 'AST %', data: [pctAst], backgroundColor: '#10b981' },
+            { label: 'STL %', data: [pctStl], backgroundColor: '#8b5cf6' },
+            { label: 'BLK %', data: [pctBlk], backgroundColor: '#ec4899' }
+          ]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 12, font: { size: 10 } } },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `${context.dataset.label}: ${context.raw.toFixed(1)}%`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { stacked: true, max: 100, grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#64748b', callback: v => v + '%' } },
+            y: { stacked: true, grid: { display: false }, ticks: { display: false } }
+          }
+        }
+      });
     }
 
     function closePlayerModal() {

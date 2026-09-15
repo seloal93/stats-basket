@@ -1,4 +1,468 @@
-function renderPlayerCharts(p) {
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Olesa Pretemporada '26 - Stats</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js para los gráficos de Perfil -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Resaltado estilo NBA */
+    .sorted-header {
+      border-top: 3px solid #f59e0b !important;
+      background-color: #1e293b !important;
+      color: #ffffff !important;
+    }
+    .sorted-cell {
+      background-color: rgba(255, 255, 255, 0.04) !important;
+      font-weight: 600;
+    }
+    
+    /* Fija la columna de 'Jugador' al hacer scroll horizontal en móvil */
+    .sticky-col {
+      position: sticky;
+      left: 0;
+      background-color: #0f172a;
+      z-index: 10;
+    }
+    th.sticky-col {
+      z-index: 20;
+      background-color: #1e293b;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900 px-4 sm:px-6 py-4 flex flex-col md:flex-row gap-4 justify-between items-center shadow-lg">
+    <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+      <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white italic uppercase">
+        Olesa <span class="text-amber-500">Pretemporada '26</span>
+      </h1>
+    </div>
+
+    <!-- Filtros y Controles del Header -->
+    <div class="flex flex-wrap md:flex-nowrap items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+      
+      <!-- Selector de Perfil / Gráfico de Jugador -->
+      <div class="flex items-center gap-1.5 text-xs">
+        <select id="player-profile-select" onchange="onSelectPlayerProfile(this.value)" class="bg-slate-800 text-amber-400 border border-amber-500/40 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500 font-semibold cursor-pointer">
+          <option value="">👤 Ver Perfil / Gráficos...</option>
+        </select>
+      </div>
+
+      <!-- Desplegable Últimas N Fechas -->
+      <div class="flex items-center text-xs">
+        <select id="last-games" onchange="filterGames(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500 font-medium">
+          <option value="all">Toda la Temporada</option>
+          <option value="1">Última Jornada</option>
+          <option value="2">Últimas 2 Jornadas</option>
+          <option value="3">Últimas 3 Jornadas</option>
+          <option value="5">Últimas 5 Jornadas</option>
+          <option value="10">Últimas 10 Jornadas</option>
+        </select>
+      </div>
+
+      <!-- Selector Promedios / Totales -->
+      <div class="flex bg-slate-800 p-1 rounded-lg text-xs font-semibold">
+        <button id="btn-avg" onclick="setMode('avg')" class="px-3 py-1.5 rounded-md bg-amber-500 text-slate-950 font-bold transition">Promedios</button>
+        <button id="btn-tot" onclick="setMode('tot')" class="px-3 py-1.5 rounded-md text-slate-400 hover:text-white transition">Totales</button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Contenido Principal -->
+  <main class="max-w-7xl mx-auto p-4 sm:p-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-4">
+      <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Estadísticas Generales</h2>
+    </div>
+
+    <div id="loading" class="text-center py-16 text-slate-400 font-medium">Cargando datos del Sheet...</div>
+
+    <div id="table-container" class="hidden overflow-x-auto rounded-lg border border-slate-800 bg-slate-900 shadow-xl">
+      <table class="w-full text-xs sm:text-sm text-left text-slate-300">
+        <thead class="text-[11px] sm:text-xs uppercase bg-slate-800/80 text-slate-400 border-b border-slate-700 cursor-pointer select-none">
+          <tr id="table-head">
+            <th class="px-2 sm:px-3 py-3 w-8 text-slate-600 text-center">#</th>
+            <th data-col="player" onclick="sortBy('player')" class="px-3 sm:px-4 py-3 font-semibold text-white sticky-col border-r border-slate-800">JUGADOR</th>
+            <th data-col="gp" onclick="sortBy('gp')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">GP</th>
+            <th data-col="pts" onclick="sortBy('pts')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">PTS</th>
+            <th data-col="fgm" onclick="sortBy('fgm')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">FGM</th>
+            <th data-col="fga" onclick="sortBy('fga')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">FGA</th>
+            <th data-col="fg_pct" onclick="sortBy('fg_pct')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">FG%</th>
+            <th data-col="t3m" onclick="sortBy('t3m')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">3PM</th>
+            <th data-col="t3a" onclick="sortBy('t3a')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">3PA</th>
+            <th data-col="t3_pct" onclick="sortBy('t3_pct')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">3P%</th>
+            <th data-col="rbo" onclick="sortBy('rbo')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">OREB</th>
+            <th data-col="rbt" onclick="sortBy('rbt')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">REB</th>
+            <th data-col="ast" onclick="sortBy('ast')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">AST</th>
+            <th data-col="blk" onclick="sortBy('blk')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">BLK</th>
+            <th data-col="stl" onclick="sortBy('stl')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">STL</th>
+            <th data-col="to" onclick="sortBy('to')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">TO</th>
+            <th data-col="eff" onclick="sortBy('eff')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">EFF</th>
+          </tr>
+        </thead>
+        <tbody id="stats-body" class="divide-y divide-slate-800/60">
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Modal Perfil de Jugador + Gráficos -->
+  <div id="player-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onclick="closePlayerModal(event)">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="px-5 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-800/50">
+        <div>
+          <h3 id="modal-player-name" class="text-xl sm:text-2xl font-black text-white italic"></h3>
+          <p id="modal-player-summary" class="text-xs text-slate-400 mt-0.5"></p>
+        </div>
+        <button onclick="closePlayerModal()" class="text-slate-400 hover:text-white bg-slate-800 p-2 rounded-lg text-lg font-bold w-9 h-9 flex items-center justify-center transition">✕</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6">
+        
+        <!-- Sección de Gráficos del Jugador -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <!-- Gráfico 1: Radar (Jugador vs Media de la Liga) -->
+          <div class="bg-slate-800/40 p-3 sm:p-4 rounded-xl border border-slate-800 flex flex-col items-center">
+            <h5 class="text-xs font-bold uppercase text-amber-400 tracking-wider mb-2 text-center">Perfil vs Media de la Liga</h5>
+            <div class="w-full max-w-[280px] h-[220px]">
+              <canvas id="radarChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Gráfico 2: Distribución % del Total de Producción Individual -->
+          <div class="bg-slate-800/40 p-3 sm:p-4 rounded-xl border border-slate-800 flex flex-col items-center">
+            <h5 class="text-xs font-bold uppercase text-amber-400 tracking-wider mb-2 text-center">Distribución % de Aportación</h5>
+            <div class="w-full h-[180px] flex items-center justify-center">
+              <canvas id="stackedBarChart"></canvas>
+            </div>
+            <p id="stacked-desc" class="text-[11px] text-slate-400 mt-2 text-center"></p>
+          </div>
+
+        </div>
+
+        <!-- Histórico de Partidos -->
+        <div>
+          <h4 class="text-xs font-bold uppercase text-slate-400 tracking-wider mb-3">Histórico de Partidos</h4>
+          
+          <div class="overflow-x-auto rounded-lg border border-slate-800">
+            <table class="w-full text-xs text-left text-slate-300">
+              <thead class="bg-slate-800 text-slate-400 uppercase text-[10px]">
+                <tr>
+                  <th class="px-3 py-2">Fecha</th>
+                  <th class="px-2 py-2 text-right text-amber-400">PTS</th>
+                  <th class="px-2 py-2 text-right">FGM/A</th>
+                  <th class="px-2 py-2 text-right">3PM/A</th>
+                  <th class="px-2 py-2 text-right">REB</th>
+                  <th class="px-2 py-2 text-right">AST</th>
+                  <th class="px-2 py-2 text-right">BLK</th>
+                  <th class="px-2 py-2 text-right">STL</th>
+                  <th class="px-2 py-2 text-right">TO</th>
+                  <th class="px-2 py-2 text-right text-emerald-400">EFF</th>
+                </tr>
+              </thead>
+              <tbody id="modal-games-body" class="divide-y divide-slate-800">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'https://sheetdb.io/api/v1/qvxszq0qirsq0';
+    let rawData = [];
+    let processedPlayers = [];
+    let dynamicGroupAverages = { pts: 0, rbt: 0, ast: 0, stl: 0, blk: 0 };
+    let currentSort = 'pts';
+    let sortAsc = false;
+    let displayMode = 'avg';
+    let lastGamesLimit = 'all';
+
+    let radarChartInstance = null;
+    let stackedChartInstance = null;
+
+    const columns = [
+      { key: 'player', label: 'JUGADOR' },
+      { key: 'gp', label: 'GP' },
+      { key: 'pts', label: 'PTS' },
+      { key: 'fgm', label: 'FGM' },
+      { key: 'fga', label: 'FGA' },
+      { key: 'fg_pct', label: 'FG%' },
+      { key: 't3m', label: '3PM' },
+      { key: 't3a', label: '3PA' },
+      { key: 't3_pct', label: '3P%' },
+      { key: 'rbo', label: 'OREB' },
+      { key: 'rbt', label: 'REB' },
+      { key: 'ast', label: 'AST' },
+      { key: 'blk', label: 'BLK' },
+      { key: 'stl', label: 'STL' },
+      { key: 'to', label: 'TO' },
+      { key: 'eff', label: 'EFF' }
+    ];
+
+    fetch(API_URL)
+      .then(res => res.json())
+      .then(data => {
+        rawData = data;
+        processData();
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('table-container').classList.remove('hidden');
+        populateHeaderSelect();
+        renderTable();
+      })
+      .catch(err => {
+        document.getElementById('loading').innerText = 'Error al cargar las estadísticas.';
+        console.error(err);
+      });
+
+    function processData() {
+      const allDates = Array.from(new Set(
+        rawData.map(r => (r.date || '').trim()).filter(Boolean)
+      )).sort();
+
+      let allowedDates = new Set(allDates);
+      if (lastGamesLimit !== 'all' && allDates.length > 0) {
+        const limit = parseInt(lastGamesLimit);
+        const targetDates = allDates.slice(-limit);
+        allowedDates = new Set(targetDates);
+      }
+
+      const filteredData = rawData.filter(r => allowedDates.has((r.date || '').trim()));
+      const playersMap = {};
+
+      filteredData.forEach(row => {
+        const name = (row.player || '').trim();
+        if (!name) return;
+
+        if (!playersMap[name]) {
+          playersMap[name] = { player: name, gp: 0, fgm: 0, fga: 0, t3m: 0, t3a: 0, rbo: 0, rbt: 0, ast: 0, blk: 0, stl: 0, to: 0 };
+        }
+
+        const p = playersMap[name];
+        p.gp += 1;
+        p.fgm += parseFloat(row.fgm) || 0;
+        p.fga += parseFloat(row.fga) || 0;
+        p.t3m += parseFloat(row.t3m) || 0;
+        p.t3a += parseFloat(row.t3a) || 0;
+        p.rbo += parseFloat(row.rbo) || 0;
+        p.rbt += parseFloat(row.rbt) || 0;
+        p.ast += parseFloat(row.ast) || 0;
+        p.blk += parseFloat(row.blk) || 0;
+        p.stl += parseFloat(row.stl) || 0;
+        p.to  += parseFloat(row.to)  || 0;
+      });
+
+      processedPlayers = Object.values(playersMap).map(p => {
+        const pts = ((p.fgm - p.t3m) * 2) + (p.t3m * 3);
+        const missedFg = p.fga - p.fgm;
+        const eff = (pts + p.rbt + p.ast + p.stl + p.blk) - (missedFg + p.to);
+        const fg_pct = p.fga > 0 ? (p.fgm / p.fga) * 100 : 0;
+        const t3_pct = p.t3a > 0 ? (p.t3m / p.t3a) * 100 : 0;
+
+        return { ...p, pts, eff, fg_pct, t3_pct };
+      });
+
+      // CÁLCULO DINÁMICO DE MEDIAS DE LA LIGA (Suma de promedios / total jugadores activos)
+      if (processedPlayers.length > 0) {
+        const totalActivePlayers = processedPlayers.length;
+        const sums = processedPlayers.reduce((acc, p) => {
+          acc.pts += (p.pts / p.gp);
+          acc.rbt += (p.rbt / p.gp);
+          acc.ast += (p.ast / p.gp);
+          acc.stl += (p.stl / p.gp);
+          acc.blk += (p.blk / p.gp);
+          return acc;
+        }, { pts: 0, rbt: 0, ast: 0, stl: 0, blk: 0 });
+
+        dynamicGroupAverages = {
+          pts: sums.pts / totalActivePlayers,
+          rbt: sums.rbt / totalActivePlayers,
+          ast: sums.ast / totalActivePlayers,
+          stl: sums.stl / totalActivePlayers,
+          blk: sums.blk / totalActivePlayers
+        };
+      }
+    }
+
+    function populateHeaderSelect() {
+      const select = document.getElementById('player-profile-select');
+      select.innerHTML = '<option value="">👤 Ver Perfil / Gráficos...</option>';
+      
+      const sortedNames = [...processedPlayers].map(p => p.player).sort((a,b) => a.localeCompare(b));
+      sortedNames.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.innerText = name;
+        select.appendChild(opt);
+      });
+    }
+
+    function onSelectPlayerProfile(playerName) {
+      if (!playerName) return;
+      openPlayerModal(playerName);
+      document.getElementById('player-profile-select').value = "";
+    }
+
+    function filterGames(value) {
+      lastGamesLimit = value;
+      processData();
+      renderTable();
+    }
+
+    function setMode(mode) {
+      displayMode = mode;
+      document.getElementById('btn-avg').className = mode === 'avg' ? "px-3 py-1.5 rounded-md bg-amber-500 text-slate-950 font-bold transition" : "px-3 py-1.5 rounded-md text-slate-400 hover:text-white transition";
+      document.getElementById('btn-tot').className = mode === 'tot' ? "px-3 py-1.5 rounded-md bg-amber-500 text-slate-950 font-bold transition" : "px-3 py-1.5 rounded-md text-slate-400 hover:text-white transition";
+      renderTable();
+    }
+
+    function sortBy(key) {
+      if (currentSort === key) {
+        sortAsc = !sortAsc;
+      } else {
+        currentSort = key;
+        sortAsc = false;
+      }
+      renderTable();
+    }
+
+    function renderHeaders() {
+      const ths = document.querySelectorAll('#table-head th[data-col]');
+      ths.forEach(th => {
+        const colKey = th.getAttribute('data-col');
+        const colObj = columns.find(c => c.key === colKey);
+        const isSticky = colKey === 'player' ? 'sticky-col border-r border-slate-800' : '';
+        
+        if (colKey === currentSort) {
+          th.className = `px-2.5 sm:px-3 py-3 text-right font-bold sorted-header ${isSticky}`;
+          if (colKey === 'player') th.className = `px-3 sm:px-4 py-3 font-bold sorted-header ${isSticky}`;
+          th.innerHTML = `${colObj.label} <span class="text-amber-500 text-[10px] sm:text-xs">${sortAsc ? '▲' : '▼'}</span>`;
+        } else {
+          th.className = `px-2.5 sm:px-3 py-3 text-right font-semibold text-slate-400 hover:text-white transition border-t-2 border-transparent ${isSticky}`;
+          if (colKey === 'player') th.className = `px-3 sm:px-4 py-3 font-semibold text-white hover:text-amber-400 transition border-t-2 border-transparent ${isSticky}`;
+          th.innerText = colObj.label;
+        }
+      });
+    }
+
+    function renderTable() {
+      renderHeaders();
+
+      processedPlayers.sort((a, b) => {
+        let valA = a[currentSort];
+        let valB = b[currentSort];
+        if (displayMode === 'avg' && !['player', 'gp', 'fg_pct', 't3_pct'].includes(currentSort)) {
+          valA = valA / a.gp;
+          valB = valB / b.gp;
+        }
+        if (typeof valA === 'string') return sortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        return sortAsc ? valA - valB : valB - valA;
+      });
+
+      const tbody = document.getElementById('stats-body');
+      tbody.innerHTML = '';
+
+      processedPlayers.forEach((p, index) => {
+        const isAvg = displayMode === 'avg';
+        const fmt = (val) => isAvg ? (val / p.gp).toFixed(1) : val.toFixed(0);
+        const isSorted = (k) => k === currentSort ? 'sorted-cell' : '';
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/50 transition border-b border-slate-800/40";
+        tr.innerHTML = `
+          <td class="px-2 sm:px-3 py-3 text-slate-600 text-center text-xs font-medium">${index + 1}</td>
+          <td onclick="openPlayerModal('${p.player}')" class="px-3 sm:px-4 py-3 font-semibold text-amber-400 hover:text-amber-300 underline underline-offset-4 cursor-pointer whitespace-nowrap sticky-col border-r border-slate-800/80 ${isSorted('player')}">
+            ${p.player}
+          </td>
+          <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('gp')}">${p.gp}</td>
+          <td class="px-2.5 sm:px-3 py-3 text-right font-medium ${isSorted('pts')}">${fmt(p.pts)}</td>
+          <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('fgm')}">${fmt(p.fgm)}</td>
+          <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('fga')}">${fmt(p.fga)}</td>
+          <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('fg_pct')}">${p.fg_pct.toFixed(1)}%</td>
+          <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('t3m')}">${fmt(p.t3m)}</td>
+          <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('t3a')}">${fmt(p.t3a)}</td>
+          <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('t3_pct')}">${p.t3_pct.toFixed(1)}%</td>
+          <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('rbo')}">${fmt(p.rbo)}</td>
+          <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('rbt')}">${fmt(p.rbt)}</td>
+          <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('ast')}">${fmt(p.ast)}</td>
+          <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('blk')}">${fmt(p.blk)}</td>
+          <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('stl')}">${fmt(p.stl)}</td>
+          <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('to')}">${fmt(p.to)}</td>
+          <td class="px-2.5 sm:px-3 py-3 text-right font-medium text-emerald-400 ${isSorted('eff')}">${fmt(p.eff)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function openPlayerModal(playerName) {
+      const p = processedPlayers.find(item => item.player === playerName);
+      if (!p) return;
+
+      const ppp = (p.pts / p.gp).toFixed(1);
+      const rpp = (p.rbt / p.gp).toFixed(1);
+      const app = (p.ast / p.gp).toFixed(1);
+
+      document.getElementById('modal-player-name').innerText = playerName;
+      document.getElementById('modal-player-summary').innerText = 
+        `${p.gp} partidos jugados | ${ppp} PPP | ${rpp} RPP | ${app} APP`;
+
+      renderPlayerCharts(p);
+
+      const playerGames = rawData
+        .filter(r => (r.player || '').trim() === playerName)
+        .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+      const modalBody = document.getElementById('modal-games-body');
+      modalBody.innerHTML = '';
+
+      playerGames.forEach(g => {
+        const fgm = parseFloat(g.fgm) || 0;
+        const fga = parseFloat(g.fga) || 0;
+        const t3m = parseFloat(g.t3m) || 0;
+        const t3a = parseFloat(g.t3a) || 0;
+        const rbt = parseFloat(g.rbt) || 0;
+        const ast = parseFloat(g.ast) || 0;
+        const blk = parseFloat(g.blk) || 0;
+        const stl = parseFloat(g.stl) || 0;
+        const to = parseFloat(g.to) || 0;
+
+        const pts = ((fgm - t3m) * 2) + (t3m * 3);
+        const missedFg = fga - fgm;
+        const eff = (pts + rbt + ast + stl + blk) - (missedFg + to);
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/40";
+        tr.innerHTML = `
+          <td class="px-3 py-2 font-medium text-slate-200 whitespace-nowrap">${g.date || '-'}</td>
+          <td class="px-2 py-2 text-right font-bold text-amber-400">${pts}</td>
+          <td class="px-2 py-2 text-right">${fgm}/${fga}</td>
+          <td class="px-2 py-2 text-right">${t3m}/${t3a}</td>
+          <td class="px-2 py-2 text-right">${rbt}</td>
+          <td class="px-2 py-2 text-right">${ast}</td>
+          <td class="px-2 py-2 text-right">${blk}</td>
+          <td class="px-2 py-2 text-right">${stl}</td>
+          <td class="px-2 py-2 text-right">${to}</td>
+          <td class="px-2 py-2 text-right font-bold text-emerald-400">${eff}</td>
+        `;
+        modalBody.appendChild(tr);
+      });
+
+      document.getElementById('player-modal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function renderPlayerCharts(p) {
       if (radarChartInstance) radarChartInstance.destroy();
       if (stackedChartInstance) stackedChartInstance.destroy();
 
@@ -8,7 +472,7 @@ function renderPlayerCharts(p) {
       const avgStl = p.stl / p.gp;
       const avgBlk = p.blk / p.gp;
 
-      // 1. Radar Chart con Tooltips desplazados fuera del centro
+      // 1. Radar Chart con Tooltips ajustados
       const ctxRadar = document.getElementById('radarChart').getContext('2d');
       radarChartInstance = new Chart(ctxRadar, {
         type: 'radar',
@@ -56,8 +520,8 @@ function renderPlayerCharts(p) {
             tooltip: {
               mode: 'index',
               intersect: false,
-              position: 'nearest', // Desplaza el tooltip hacia el punto activo para no tapar el centro
-              caretPadding: 12,     // Espacio entre la flecha del cuadro y el punto del radar
+              position: 'nearest',
+              caretPadding: 12,
               backgroundColor: '#0f172a',
               titleColor: '#f59e0b',
               bodyColor: '#f8fafc',
@@ -137,3 +601,11 @@ function renderPlayerCharts(p) {
         }
       });
     }
+
+    function closePlayerModal() {
+      document.getElementById('player-modal').classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    }
+  </script>
+</body>
+</html>

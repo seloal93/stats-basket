@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NBA Stats - Liga de Amigos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900 px-6 py-4 flex justify-between items-center shadow-lg">
+    <div class="flex items-center gap-3">
+      <div class="bg-red-600 text-white font-black px-3 py-1 rounded text-xl italic tracking-wider">
+        NBA
+      </div>
+      <h1 class="text-xl font-bold tracking-tight">Estadísticas Liga de Amigos</h1>
+    </div>
+  </header>
+
+  <!-- Contenido -->
+  <main class="max-w-7xl mx-auto p-6">
+    <h2 class="text-2xl font-bold mb-4 text-white">Tabla General de Estadísticas</h2>
+
+    <div id="loading" class="text-center py-16 text-slate-400 font-medium">Cargando datos del Sheet...</div>
+
+    <div id="table-container" class="hidden overflow-x-auto rounded-lg border border-slate-800 bg-slate-900 shadow-xl">
+      <table class="w-full text-sm text-left text-slate-300">
+        <thead class="text-xs uppercase bg-slate-800 text-slate-400 border-b border-slate-700">
+          <tr>
+            <th class="px-4 py-3 font-semibold">Jugador</th>
+            <th class="px-4 py-3 text-right font-semibold text-amber-400">PTS</th>
+            <th class="px-4 py-3 text-right font-semibold">FGM</th>
+            <th class="px-4 py-3 text-right font-semibold">FGA</th>
+            <th class="px-4 py-3 text-right font-semibold">FG%</th>
+            <th class="px-4 py-3 text-right font-semibold">3PM</th>
+            <th class="px-4 py-3 text-right font-semibold">3PA</th>
+            <th class="px-4 py-3 text-right font-semibold">3P%</th>
+            <th class="px-4 py-3 text-right font-semibold">RBO</th>
+            <th class="px-4 py-3 text-right font-semibold">RBT</th>
+            <th class="px-4 py-3 text-right font-semibold">AST</th>
+            <th class="px-4 py-3 text-right font-semibold">BLK</th>
+            <th class="px-4 py-3 text-right font-semibold">STL</th>
+            <th class="px-4 py-3 text-right font-semibold text-rose-400">TO</th>
+            <th class="px-4 py-3 text-right font-semibold text-emerald-400">EFF</th>
+          </tr>
+        </thead>
+        <tbody id="stats-body" class="divide-y divide-slate-800">
+          <!-- Las filas se cargan solas aquí -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    const API_URL = 'https://sheetdb.io/api/v1/qvxszq0qirsq0';
+
+    fetch(API_URL)
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('table-container').classList.remove('hidden');
+
+        const tbody = document.getElementById('stats-body');
+        data.forEach((row, index) => {
+          const tr = document.createElement('tr');
+          tr.className = "hover:bg-slate-800/60 transition";
+          tr.innerHTML = `
+            <td class="px-4 py-3 font-medium text-white flex items-center gap-2">
+              <span class="text-slate-500 w-4 text-xs">${index + 1}</span>
+              ${row.player || ''}
+            </td>
+            <td class="px-4 py-3 text-right font-bold text-amber-400">${row.pts || 0}</td>
+            <td class="px-4 py-3 text-right">${row.fgm || 0}</td>
+            <td class="px-4 py-3 text-right">${row.fga || 0}</td>
+            <td class="px-4 py-3 text-right">${row.fg_pct || 0}</td>
+            <td class="px-4 py-3 text-right">${row.t3m || 0}</td>
+            <td class="px-4 py-3 text-right">${row.t3a || 0}</td>
+            <td class="px-4 py-3 text-right">${row.t3_pct || 0}</td>
+            <td class="px-4 py-3 text-right">${row.rbo || 0}</td>
+            <td class="px-4 py-3 text-right">${row.rbt || 0}</td>
+            <td class="px-4 py-3 text-right">${row.ast || 0}</td>
+            <td class="px-4 py-3 text-right">${row.blk || 0}</td>
+            <td class="px-4 py-3 text-right">${row.stl || 0}</td>
+            <td class="px-4 py-3 text-right text-rose-400">${row.to || 0}</td>
+            <td class="px-4 py-3 text-right font-bold text-emerald-400">${row.eff || 0}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      })
+      .catch(err => {
+        document.getElementById('loading').innerText = 'Error al cargar las estadísticas.';
+        console.error(err);
+      });
+  </script>
+</body>
+</html>

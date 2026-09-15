@@ -129,7 +129,7 @@
         <!-- Sección de Gráficos del Jugador -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           
-          <!-- Gráfico 1: Radar (Jugador vs Media del Grupo) -->
+          <!-- Gráfico 1: Radar (Jugador vs Media de la Liga) -->
           <div class="bg-slate-800/40 p-3 sm:p-4 rounded-xl border border-slate-800 flex flex-col items-center">
             <h5 class="text-xs font-bold uppercase text-amber-400 tracking-wider mb-2 text-center">Perfil vs Media de la Liga</h5>
             <div class="w-full max-w-[280px] h-[220px]">
@@ -273,7 +273,7 @@
         return { ...p, pts, eff, fg_pct, t3_pct };
       });
 
-      // CÁLCULO DINÁMICO DE MEDIAS DE LA LIGA (Dividido entre el nº real de jugadores activos)
+      // CÁLCULO DINÁMICO DE MEDIAS DE LA LIGA (Suma de promedios / total jugadores activos)
       if (processedPlayers.length > 0) {
         const totalActivePlayers = processedPlayers.length;
         const sums = processedPlayers.reduce((acc, p) => {
@@ -472,7 +472,7 @@
       const avgStl = p.stl / p.gp;
       const avgBlk = p.blk / p.gp;
 
-      // 1. Radar Chart: Jugador vs Media Dinámica de la Liga
+      // 1. Radar Chart con Tooltips claros al hacer HOVER
       const ctxRadar = document.getElementById('radarChart').getContext('2d');
       radarChartInstance = new Chart(ctxRadar, {
         type: 'radar',
@@ -486,7 +486,8 @@
               borderColor: '#f59e0b',
               borderWidth: 2,
               pointBackgroundColor: '#f59e0b',
-              pointRadius: 3
+              pointRadius: 4,
+              pointHoverRadius: 6
             },
             {
               label: 'Media Liga',
@@ -502,7 +503,8 @@
               borderWidth: 1.5,
               borderDash: [4, 4],
               pointBackgroundColor: '#64748b',
-              pointRadius: 2
+              pointRadius: 3,
+              pointHoverRadius: 5
             }
           ]
         },
@@ -516,9 +518,20 @@
               labels: { color: '#cbd5e1', font: { size: 10 }, boxWidth: 10 } 
             },
             tooltip: {
+              mode: 'index', // Muestra ambos valores (Jugador vs Media) al pasar el ratón
+              intersect: false,
+              backgroundColor: '#0f172a',
+              titleColor: '#f59e0b',
+              bodyColor: '#f8fafc',
+              borderColor: '#334155',
+              borderWidth: 1,
+              padding: 10,
               callbacks: {
+                title: function(items) {
+                  return `Categoría: ${items[0].label}`;
+                },
                 label: function(ctx) {
-                  return `${ctx.dataset.label}: ${ctx.raw.toFixed(1)}`;
+                  return ` ${ctx.dataset.label}: ${ctx.raw.toFixed(1)} / partido`;
                 }
               }
             }
@@ -569,6 +582,9 @@
           plugins: {
             legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 10, font: { size: 10 } } },
             tooltip: {
+              backgroundColor: '#0f172a',
+              borderColor: '#334155',
+              borderWidth: 1,
               callbacks: {
                 label: function(context) {
                   return `${context.dataset.label}: ${context.raw.toFixed(1)}%`;

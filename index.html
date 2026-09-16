@@ -52,14 +52,19 @@
         </select>
       </div>
 
-      <!-- Desplegable Últimas N Fechas -->
+      <!-- Desplegable Últimas N Fechas (1 a 10 Jornadas) -->
       <div class="flex items-center text-xs">
         <select id="last-games" onchange="filterGames(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500 font-medium">
           <option value="all">Toda la Temporada</option>
           <option value="1">Última Jornada</option>
           <option value="2">Últimas 2 Jornadas</option>
           <option value="3">Últimas 3 Jornadas</option>
+          <option value="4">Últimas 4 Jornadas</option>
           <option value="5">Últimas 5 Jornadas</option>
+          <option value="6">Últimas 6 Jornadas</option>
+          <option value="7">Últimas 7 Jornadas</option>
+          <option value="8">Últimas 8 Jornadas</option>
+          <option value="9">Últimas 9 Jornadas</option>
           <option value="10">Últimas 10 Jornadas</option>
         </select>
       </div>
@@ -584,7 +589,7 @@
           maintainAspectRatio: false,
           plugins: { 
             legend: { display: false },
-            tooltip: { enabled: false } // Desactivado para evitar globos tapando el centro
+            tooltip: { enabled: false }
           },
           scales: {
             r: {

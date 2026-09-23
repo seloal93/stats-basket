@@ -102,6 +102,9 @@
               <th data-col="t3m" onclick="sortBy('t3m')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">3PM</th>
               <th data-col="t3a" onclick="sortBy('t3a')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">3PA</th>
               <th data-col="t3_pct" onclick="sortBy('t3_pct')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">3P%</th>
+              <th data-col="ftm" onclick="sortBy('ftm')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">FTM</th>
+              <th data-col="fta" onclick="sortBy('fta')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">FTA</th>
+              <th data-col="ft_pct" onclick="sortBy('ft_pct')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">FT%</th>
               <th data-col="rbo" onclick="sortBy('rbo')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">OREB</th>
               <th data-col="rbt" onclick="sortBy('rbt')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">REB</th>
               <th data-col="ast" onclick="sortBy('ast')" class="px-2.5 sm:px-3 py-3 text-right font-semibold">AST</th>
@@ -190,6 +193,7 @@
                   <th class="px-2 py-2 text-right text-amber-400">PTS</th>
                   <th class="px-2 py-2 text-right">FGM/A</th>
                   <th class="px-2 py-2 text-right">3PM/A</th>
+                  <th class="px-2 py-2 text-right">FTM/A</th>
                   <th class="px-2 py-2 text-right">REB</th>
                   <th class="px-2 py-2 text-right">AST</th>
                   <th class="px-2 py-2 text-right">BLK</th>
@@ -233,6 +237,9 @@
       { key: 't3m', label: '3PM' },
       { key: 't3a', label: '3PA' },
       { key: 't3_pct', label: '3P%' },
+      { key: 'ftm', label: 'FTM' },
+      { key: 'fta', label: 'FTA' },
+      { key: 'ft_pct', label: 'FT%' },
       { key: 'rbo', label: 'OREB' },
       { key: 'rbt', label: 'REB' },
       { key: 'ast', label: 'AST' },
@@ -289,7 +296,7 @@
         if (!name) return;
 
         if (!playersMap[name]) {
-          playersMap[name] = { player: name, gp: 0, fgm: 0, fga: 0, t3m: 0, t3a: 0, rbo: 0, rbt: 0, ast: 0, blk: 0, stl: 0, to: 0 };
+          playersMap[name] = { player: name, gp: 0, fgm: 0, fga: 0, t3m: 0, t3a: 0, ftm: 0, fta: 0, rbo: 0, rbt: 0, ast: 0, blk: 0, stl: 0, to: 0 };
         }
 
         const p = playersMap[name];
@@ -298,6 +305,8 @@
         p.fga += parseFloat(row.fga) || 0;
         p.t3m += parseFloat(row.t3m) || 0;
         p.t3a += parseFloat(row.t3a) || 0;
+        p.ftm += parseFloat(row.ftm) || 0;
+        p.fta += parseFloat(row.fta) || 0;
         p.rbo += parseFloat(row.rbo) || 0;
         p.rbt += parseFloat(row.rbt) || 0;
         p.ast += parseFloat(row.ast) || 0;
@@ -307,13 +316,15 @@
       });
 
       processedPlayers = Object.values(playersMap).map(p => {
-        const pts = ((p.fgm - p.t3m) * 2) + (p.t3m * 3);
+        const pts = ((p.fgm - p.t3m) * 2) + (p.t3m * 3) + p.ftm;
         const missedFg = p.fga - p.fgm;
-        const eff = (pts + p.rbt + p.ast + p.stl + p.blk) - (missedFg + p.to);
+        const missedFt = p.fta - p.ftm;
+        const eff = (pts + p.rbt + p.ast + p.stl + p.blk) - (missedFg + missedFt + p.to);
         const fg_pct = p.fga > 0 ? (p.fgm / p.fga) * 100 : 0;
         const t3_pct = p.t3a > 0 ? (p.t3m / p.t3a) * 100 : 0;
+        const ft_pct = p.fta > 0 ? (p.ftm / p.fta) * 100 : 0;
 
-        return { ...p, pts, eff, fg_pct, t3_pct };
+        return { ...p, pts, eff, fg_pct, t3_pct, ft_pct };
       });
 
       // CÁLCULO DINÁMICO DE MEDIAS DE LA LIGA (Incluyendo EFF)
@@ -407,7 +418,7 @@
       processedPlayers.sort((a, b) => {
         let valA = a[currentSort];
         let valB = b[currentSort];
-        if (displayMode === 'avg' && !['player', 'gp', 'fg_pct', 't3_pct'].includes(currentSort)) {
+        if (displayMode === 'avg' && !['player', 'gp', 'fg_pct', 't3_pct', 'ft_pct'].includes(currentSort)) {
           valA = valA / a.gp;
           valB = valB / b.gp;
         }
@@ -438,6 +449,9 @@
           <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('t3m')}">${fmt(p.t3m)}</td>
           <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('t3a')}">${fmt(p.t3a)}</td>
           <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('t3_pct')}">${p.t3_pct.toFixed(1)}%</td>
+          <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('ftm')}">${fmt(p.ftm)}</td>
+          <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('fta')}">${fmt(p.fta)}</td>
+          <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('ft_pct')}">${p.ft_pct.toFixed(1)}%</td>
           <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('rbo')}">${fmt(p.rbo)}</td>
           <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('rbt')}">${fmt(p.rbt)}</td>
           <td class="px-2.5 sm:px-3 py-3 text-right ${isSorted('ast')}">${fmt(p.ast)}</td>
@@ -476,15 +490,18 @@
         const fga = parseFloat(g.fga) || 0;
         const t3m = parseFloat(g.t3m) || 0;
         const t3a = parseFloat(g.t3a) || 0;
+        const ftm = parseFloat(g.ftm) || 0;
+        const fta = parseFloat(g.fta) || 0;
         const rbt = parseFloat(g.rbt) || 0;
         const ast = parseFloat(g.ast) || 0;
         const blk = parseFloat(g.blk) || 0;
         const stl = parseFloat(g.stl) || 0;
         const to = parseFloat(g.to) || 0;
 
-        const pts = ((fgm - t3m) * 2) + (t3m * 3);
+        const pts = ((fgm - t3m) * 2) + (t3m * 3) + ftm;
         const missedFg = fga - fgm;
-        const eff = (pts + rbt + ast + stl + blk) - (missedFg + to);
+        const missedFt = fta - ftm;
+        const eff = (pts + rbt + ast + stl + blk) - (missedFg + missedFt + to);
 
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-800/40";
@@ -493,6 +510,7 @@
           <td class="px-2 py-2 text-right font-bold text-amber-400">${pts}</td>
           <td class="px-2 py-2 text-right">${fgm}/${fga}</td>
           <td class="px-2 py-2 text-right">${t3m}/${t3a}</td>
+          <td class="px-2 py-2 text-right">${ftm}/${fta}</td>
           <td class="px-2 py-2 text-right">${rbt}</td>
           <td class="px-2 py-2 text-right">${ast}</td>
           <td class="px-2 py-2 text-right">${blk}</td>
@@ -673,14 +691,17 @@
         const fgm = parseFloat(g.fgm) || 0;
         const fga = parseFloat(g.fga) || 0;
         const t3m = parseFloat(g.t3m) || 0;
+        const ftm = parseFloat(g.ftm) || 0;
+        const fta = parseFloat(g.fta) || 0;
         const rbt = parseFloat(g.rbt) || 0;
         const ast = parseFloat(g.ast) || 0;
         const blk = parseFloat(g.blk) || 0;
         const stl = parseFloat(g.stl) || 0;
         const to = parseFloat(g.to) || 0;
-        const pts = ((fgm - t3m) * 2) + (t3m * 3);
+        const pts = ((fgm - t3m) * 2) + (t3m * 3) + ftm;
         const missedFg = fga - fgm;
-        return (pts + rbt + ast + stl + blk) - (missedFg + to);
+        const missedFt = fta - ftm;
+        return (pts + rbt + ast + stl + blk) - (missedFg + missedFt + to);
       });
 
       const ctxLine = document.getElementById('lineChartEff').getContext('2d');

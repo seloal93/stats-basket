@@ -145,18 +145,18 @@
         <!-- Sección de Gráficos Superiores -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           
-          <!-- Gráfico 1: Radar con 6 vértices (Incluye EFF) + Leyenda Detallada -->
+          <!-- Gráfico 1: Radar con 6 vértices (Incluye EFF) + Leyenda Detallada (Sin Scroll) -->
           <div class="bg-slate-800/40 p-3 sm:p-4 rounded-xl border border-slate-800 flex flex-col items-center">
             <h5 class="text-xs font-bold uppercase text-amber-400 tracking-wider mb-2 text-center">Perfil vs Media de la Liga</h5>
             
-            <div class="w-full flex flex-col sm:flex-row items-center justify-around gap-4">
+            <div class="w-full flex flex-col sm:flex-row items-center justify-around gap-3">
               <!-- Radar Chart -->
-              <div class="w-full sm:w-1/2 max-w-[200px] h-[190px]">
+              <div class="w-full sm:w-1/2 max-w-[190px] h-[180px]">
                 <canvas id="radarChart"></canvas>
               </div>
 
-              <!-- Leyenda con Stats y Media incluyendo EFF -->
-              <div id="radar-legend" class="w-full sm:w-1/2 flex flex-col gap-2 text-xs bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 max-h-[190px] overflow-y-auto">
+              <!-- Leyenda con Stats y Media incluyendo EFF (Sin scroll, limpia) -->
+              <div id="radar-legend" class="w-full sm:w-1/2 flex flex-col text-xs bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
                 <!-- Se rellena dinámicamente -->
               </div>
             </div>
@@ -327,7 +327,7 @@
         return { ...p, pts, eff, fg_pct, t3_pct, ft_pct };
       });
 
-      // CÁLCULO DINÁMICO DE MEDIAS DE LA LIGA (Por partido para cada jugador, y su media global)
+      // CÁLCULO DINÁMICO DE MEDIAS DE LA LIGA
       if (processedPlayers.length > 0) {
         const totalActivePlayers = processedPlayers.length;
         const sums = processedPlayers.reduce((acc, p) => {
@@ -537,46 +537,46 @@
       const avgBlk = (p.blk / p.gp);
       const avgEff = (p.eff / p.gp);
 
-      // Generar Leyenda de Stats corregida con las medias reales de la liga
+      // Leyenda ajustada sin scroll y con diseño compacto perfecto
       const legendContainer = document.getElementById('radar-legend');
       legendContainer.innerHTML = `
-        <div class="border-b border-slate-800 pb-1 flex justify-between items-center text-[11px] font-bold text-slate-400 uppercase">
-          <span>Métrica</span>
-          <span class="text-amber-400">${p.player} <span class="text-slate-400 font-normal">(Media Liga)</span></span>
+        <div class="border-b border-slate-800 pb-1 flex justify-between items-center text-[11px] font-bold text-slate-400">
+          <span class="text-amber-400 uppercase truncate max-w-[110px]">${p.player}</span>
+          <span class="text-[10px] text-slate-400 font-normal">(Media Liga)</span>
         </div>
         
-        <div class="flex justify-between items-center">
-          <span class="font-bold text-slate-200">PTS</span>
-          <div class="text-right"><span class="text-amber-400 font-bold">${avgPts.toFixed(1)}</span> <span class="text-[10px] text-slate-400">(${dynamicGroupAverages.pts.toFixed(1)})</span></div>
+        <div class="flex justify-between items-center py-0.5">
+          <span class="font-bold text-slate-200 text-xs">PTS</span>
+          <div class="text-right"><span class="text-amber-400 font-bold text-xs">${avgPts.toFixed(1)}</span> <span class="text-[10px] text-slate-400">(${dynamicGroupAverages.pts.toFixed(1)})</span></div>
         </div>
 
-        <div class="flex justify-between items-center">
-          <span class="font-bold text-slate-200">REB</span>
-          <div class="text-right"><span class="text-amber-400 font-bold">${avgReb.toFixed(1)}</span> <span class="text-[10px] text-slate-400">(${dynamicGroupAverages.rbt.toFixed(1)})</span></div>
+        <div class="flex justify-between items-center py-0.5">
+          <span class="font-bold text-slate-200 text-xs">REB</span>
+          <div class="text-right"><span class="text-amber-400 font-bold text-xs">${avgReb.toFixed(1)}</span> <span class="text-[10px] text-slate-400">(${dynamicGroupAverages.rbt.toFixed(1)})</span></div>
         </div>
 
-        <div class="flex justify-between items-center">
-          <span class="font-bold text-slate-200">AST</span>
-          <div class="text-right"><span class="text-amber-400 font-bold">${avgAst.toFixed(1)}</span> <span class="text-[10px] text-slate-400">(${dynamicGroupAverages.ast.toFixed(1)})</span></div>
+        <div class="flex justify-between items-center py-0.5">
+          <span class="font-bold text-slate-200 text-xs">AST</span>
+          <div class="text-right"><span class="text-amber-400 font-bold text-xs">${avgAst.toFixed(1)}</span> <span class="text-[10px] text-slate-400">(${dynamicGroupAverages.ast.toFixed(1)})</span></div>
         </div>
 
-        <div class="flex justify-between items-center">
-          <span class="font-bold text-slate-200">STL</span>
-          <div class="text-right"><span class="text-amber-400 font-bold">${avgStl.toFixed(1)}</span> <span class="text-[10px] text-slate-400">(${dynamicGroupAverages.stl.toFixed(1)})</span></div>
+        <div class="flex justify-between items-center py-0.5">
+          <span class="font-bold text-slate-200 text-xs">STL</span>
+          <div class="text-right"><span class="text-amber-400 font-bold text-xs">${avgStl.toFixed(1)}</span> <span class="text-[10px] text-slate-400">(${dynamicGroupAverages.stl.toFixed(1)})</span></div>
         </div>
 
-        <div class="flex justify-between items-center">
-          <span class="font-bold text-slate-200">BLK</span>
-          <div class="text-right"><span class="text-amber-400 font-bold">${avgBlk.toFixed(1)}</span> <span class="text-[10px] text-slate-400">(${dynamicGroupAverages.blk.toFixed(1)})</span></div>
+        <div class="flex justify-between items-center py-0.5">
+          <span class="font-bold text-slate-200 text-xs">BLK</span>
+          <div class="text-right"><span class="text-amber-400 font-bold text-xs">${avgBlk.toFixed(1)}</span> <span class="text-[10px] text-slate-400">(${dynamicGroupAverages.blk.toFixed(1)})</span></div>
         </div>
 
-        <div class="flex justify-between items-center">
-          <span class="font-bold text-emerald-400">EFF</span>
-          <div class="text-right"><span class="text-emerald-400 font-bold">${avgEff.toFixed(1)}</span> <span class="text-[10px] text-slate-400">(${dynamicGroupAverages.eff.toFixed(1)})</span></div>
+        <div class="flex justify-between items-center py-0.5 border-t border-slate-800/60 mt-0.5">
+          <span class="font-bold text-emerald-400 text-xs">EFF</span>
+          <div class="text-right"><span class="text-emerald-400 font-bold text-xs">${avgEff.toFixed(1)}</span> <span class="text-[10px] text-slate-400">(${dynamicGroupAverages.eff.toFixed(1)})</span></div>
         </div>
       `;
 
-      // 1. Radar Chart con escala automática y bien proporcionada
+      // 1. Radar Chart
       const ctxRadar = document.getElementById('radarChart').getContext('2d');
       radarChartInstance = new Chart(ctxRadar, {
         type: 'radar',

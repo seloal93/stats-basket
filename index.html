@@ -327,7 +327,7 @@
         return { ...p, pts, eff, fg_pct, t3_pct, ft_pct };
       });
 
-      // CÁLCULO DINÁMICO DE MEDIAS DE LA LIGA (Incluyendo EFF)
+      // CÁLCULO DINÁMICO DE MEDIAS DE LA LIGA (Por partido para cada jugador, y su media global)
       if (processedPlayers.length > 0) {
         const totalActivePlayers = processedPlayers.length;
         const sums = processedPlayers.reduce((acc, p) => {
@@ -537,12 +537,12 @@
       const avgBlk = (p.blk / p.gp);
       const avgEff = (p.eff / p.gp);
 
-      // Generar Leyenda de Stats con 6 métricas (incluyendo EFF)
+      // Generar Leyenda de Stats corregida con las medias reales de la liga
       const legendContainer = document.getElementById('radar-legend');
       legendContainer.innerHTML = `
         <div class="border-b border-slate-800 pb-1 flex justify-between items-center text-[11px] font-bold text-slate-400 uppercase">
           <span>Métrica</span>
-          <span class="text-amber-400">${p.player} (Media)</span>
+          <span class="text-amber-400">${p.player} <span class="text-slate-400 font-normal">(Media Liga)</span></span>
         </div>
         
         <div class="flex justify-between items-center">
@@ -576,7 +576,7 @@
         </div>
       `;
 
-      // 1. Radar Chart con 6 vértices (PTS, REB, AST, STL, BLK, EFF)
+      // 1. Radar Chart con escala automática y bien proporcionada
       const ctxRadar = document.getElementById('radarChart').getContext('2d');
       radarChartInstance = new Chart(ctxRadar, {
         type: 'radar',
